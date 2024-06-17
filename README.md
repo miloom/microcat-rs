@@ -1,3 +1,5 @@
+![workflow](https://github.com/miloom/microcat-rs/actions/workflows/rust.yml/badge.svg)
+
 microcat-rs
 ===========
 

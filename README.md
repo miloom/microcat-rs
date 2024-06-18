@@ -6,11 +6,15 @@ microcat-rs
 Rust project for _Microcat_.
 
 ## Dependencies
-1. Install rust 
+1. Install rust on the development machine 
 ```bash
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 ```
 
+2. Install the static libraries to raspberry pi
+```bash
+sudo apt install libc6:armhf libstdc++6:armhf
+```
 
 ## Build Instructions
 1. Install prerequisites (`gcc-arm-linux-gnueabihf`)

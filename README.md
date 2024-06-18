@@ -5,6 +5,10 @@ microcat-rs
 
 Rust project for _Microcat_.
 
+## Dependencies
+1. Install rust `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`
+
+
 ## Build Instructions
 1. Install prerequisites (`gcc-arm-linux-gnueabihf`)
 

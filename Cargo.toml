@@ -4,5 +4,9 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+clap = { version = "4.5.7", features = ["derive"] }
 rppal = "0.18.0"
 signal-hook = "0.3.17"
+tokio = "1.38.0"
+zenoh = { version = "0.11.0", default-features = true }
+zenoh-util = "0.11.0"

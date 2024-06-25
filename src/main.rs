@@ -1,12 +1,14 @@
 use std::error::Error;
 use std::time::Duration;
 
-use rppal::system::DeviceInfo;
 use clap::Parser;
+use rppal::system::DeviceInfo;
 use zenoh::config::Config;
 use zenoh::prelude::r#async::*;
 
+#[allow(dead_code)]
 mod consts;
+#[allow(dead_code)]
 mod rgb;
 
 #[tokio::main]
@@ -17,15 +19,21 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     zenoh_util::try_init_log_from_env();
 
-    let (config, key_expr, value, attachment) = parse_args();
+    let (config, key_expr, value, _attachment) = parse_args();
 
     println!("Opening session...");
     let session = zenoh::open(config).res().await.unwrap();
-    
+
     let info = session.info();
     println!("zid: {}", info.zid().res().await);
-    println!("routers zid: {:?}", info.routers_zid().res().await.collect::<Vec<ZenohId>>());
-    println!("peers zid: {:?}", info.peers_zid().res().await.collect::<Vec<ZenohId>>());
+    println!(
+        "routers zid: {:?}",
+        info.routers_zid().res().await.collect::<Vec<ZenohId>>()
+    );
+    println!(
+        "peers zid: {:?}",
+        info.peers_zid().res().await.collect::<Vec<ZenohId>>()
+    );
 
     println!("Declaring Publisher on '{key_expr}'...");
     let publisher = session.declare_publisher(&key_expr).res().await.unwrap();
@@ -35,13 +43,11 @@ async fn main() -> Result<(), Box<dyn Error>> {
         tokio::time::sleep(Duration::from_secs(1)).await;
         let buf = format!("[{idx:4}] {value}");
         let put = publisher.put(buf);
-        put.res().await.unwrap()
+        put.res().await.unwrap();
     }
 
     Ok(())
 }
-
-
 
 #[derive(clap::Parser, Clone, PartialEq, Eq, Hash, Debug)]
 struct Args {
@@ -60,20 +66,16 @@ struct Args {
     common: CommonArgs,
 }
 
-fn split_once(s: &str, c: char) -> (&[u8], &[u8]) {
-    let s_bytes = s.as_bytes();
-    match s.find(c) {
-        Some(index) => {
-            let (l, r) = s_bytes.split_at(index);
-            (l, &r[1..])
-        }
-        None => (s_bytes, &[]),
-    }
-}
-
 fn parse_args() -> (Config, KeyExpr<'static>, String, Option<String>) {
     let args = Args::parse();
-    (args.common.into(), args.key, args.value, args.attach)
+    (
+        args.common
+            .try_into()
+            .expect("Expected successful conversion"),
+        args.key,
+        args.value,
+        args.attach,
+    )
 }
 
 #[derive(clap::ValueEnum, Clone, Copy, PartialEq, Eq, Hash, Debug)]
@@ -109,17 +111,21 @@ pub struct CommonArgs {
     enable_shm: bool,
 }
 
-impl From<CommonArgs> for Config {
-    fn from(value: CommonArgs) -> Self {
-        (&value).into()
+impl TryFrom<CommonArgs> for Config {
+    type Error = &'static str;
+
+    fn try_from(value: CommonArgs) -> Result<Self, Self::Error> {
+        (&value).try_into()
     }
 }
-impl From<&CommonArgs> for Config {
-    fn from(value: &CommonArgs) -> Self {
-        let mut config = match &value.config {
-            Some(path) => Config::from_file(path).unwrap(),
-            None => Config::default(),
-        };
+impl TryFrom<&CommonArgs> for Config {
+    type Error = &'static str;
+
+    fn try_from(value: &CommonArgs) -> Result<Self, Self::Error> {
+        let mut config = value
+            .config
+            .as_ref()
+            .map_or_else(Self::default, |path| Self::from_file(path).unwrap());
         match value.mode {
             Some(Wai::Peer) => config.set_mode(Some(zenoh::scouting::WhatAmI::Peer)),
             Some(Wai::Client) => config.set_mode(Some(zenoh::scouting::WhatAmI::Client)),
@@ -145,6 +151,6 @@ impl From<&CommonArgs> for Config {
                 std::process::exit(-1);
             }
         }
-        config
+        Ok(config)
     }
 }

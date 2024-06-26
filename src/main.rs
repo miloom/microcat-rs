@@ -1,10 +1,11 @@
 use std::error::Error;
+use std::thread;
 use std::time::Duration;
 
-use clap::Parser;
+use icm20608g as imu;
+use icm20608g::structs::{AccelConfig1, Config, PowerManagement1, ReadRegister, WriteRegister};
+use rppal::i2c::I2c;
 use rppal::system::DeviceInfo;
-use zenoh::config::Config;
-use zenoh::prelude::r#async::*;
 
 #[allow(dead_code)]
 mod consts;
@@ -16,141 +17,27 @@ async fn main() -> Result<(), Box<dyn Error>> {
     println!("Blinking an LED on a {}.", DeviceInfo::new()?.model());
 
     // let mut rgb = rgb::init_leds()?;
-
-    zenoh_util::try_init_log_from_env();
-
-    let (config, key_expr, value, _attachment) = parse_args();
-
-    println!("Opening session...");
-    let session = zenoh::open(config).res().await.unwrap();
-
-    let info = session.info();
-    println!("zid: {}", info.zid().res().await);
-    println!(
-        "routers zid: {:?}",
-        info.routers_zid().res().await.collect::<Vec<ZenohId>>()
-    );
-    println!(
-        "peers zid: {:?}",
-        info.peers_zid().res().await.collect::<Vec<ZenohId>>()
-    );
-
-    println!("Declaring Publisher on '{key_expr}'...");
-    let publisher = session.declare_publisher(&key_expr).res().await.unwrap();
-
-    println!("Press CTLR-C to quit....");
-    for idx in 0..u32::MAX {
-        tokio::time::sleep(Duration::from_secs(1)).await;
-        let buf = format!("[{idx:4}] {value}");
-        let put = publisher.put(buf);
-        put.res().await.unwrap();
+    let mut i2c = I2c::new()?;
+    println!("I2c: {:?}", i2c.capabilities());
+    imu::who_am_i(&mut i2c);
+    let mut pwr_mgmt = PowerManagement1::new(&mut i2c)?;
+    pwr_mgmt.print_table(&mut i2c)?;
+    pwr_mgmt.sleep = false;
+    pwr_mgmt.write(&mut i2c)?;
+    let mut config = Config::new(&mut i2c)?;
+    config.print_table(&mut i2c)?;
+    config.dlpf_cfg = 6;
+    config.write(&mut i2c)?;
+    let accel_config = AccelConfig1::new(&mut i2c)?;
+    accel_config.print_table(&mut i2c)?;
+    for _ in 0..100 {
+        let acceleration = imu::accel_data(&mut i2c)?;
+        println!(
+            "Acceleration x: {} y: {} z: {}",
+            acceleration.x, acceleration.y, acceleration.z
+        );
+        thread::sleep(Duration::from_millis(1000));
     }
 
     Ok(())
-}
-
-#[derive(clap::Parser, Clone, PartialEq, Eq, Hash, Debug)]
-struct Args {
-    #[arg(short, long, default_value = "demo/example/zenoh-rs-pub")]
-    /// The key expression to write to.
-    key: KeyExpr<'static>,
-    #[arg(short, long, default_value = "Pub from Rust!")]
-    /// The value to write.
-    value: String,
-    #[arg(short, long)]
-    /// The attachments to add to each put.
-    ///
-    /// The key-value pairs are &-separated, and = serves as the separator between key and value.
-    attach: Option<String>,
-    #[command(flatten)]
-    common: CommonArgs,
-}
-
-fn parse_args() -> (Config, KeyExpr<'static>, String, Option<String>) {
-    let args = Args::parse();
-    (
-        args.common
-            .try_into()
-            .expect("Expected successful conversion"),
-        args.key,
-        args.value,
-        args.attach,
-    )
-}
-
-#[derive(clap::ValueEnum, Clone, Copy, PartialEq, Eq, Hash, Debug)]
-pub enum Wai {
-    Peer,
-    Client,
-    Router,
-}
-impl core::fmt::Display for Wai {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        core::fmt::Debug::fmt(&self, f)
-    }
-}
-#[derive(clap::Parser, Clone, PartialEq, Eq, Hash, Debug)]
-pub struct CommonArgs {
-    #[arg(short, long)]
-    /// A configuration file.
-    config: Option<String>,
-    #[arg(short, long)]
-    /// The Zenoh session mode [default: peer].
-    mode: Option<Wai>,
-    #[arg(short = 'e', long)]
-    /// Endpoints to connect to.
-    connect: Vec<String>,
-    #[arg(short, long)]
-    /// Endpoints to listen on.
-    listen: Vec<String>,
-    #[arg(long)]
-    /// Disable the multicast-based scouting mechanism.
-    no_multicast_scouting: bool,
-    #[arg(long)]
-    /// Disable the multicast-based scouting mechanism.
-    enable_shm: bool,
-}
-
-impl TryFrom<CommonArgs> for Config {
-    type Error = &'static str;
-
-    fn try_from(value: CommonArgs) -> Result<Self, Self::Error> {
-        (&value).try_into()
-    }
-}
-impl TryFrom<&CommonArgs> for Config {
-    type Error = &'static str;
-
-    fn try_from(value: &CommonArgs) -> Result<Self, Self::Error> {
-        let mut config = value
-            .config
-            .as_ref()
-            .map_or_else(Self::default, |path| Self::from_file(path).unwrap());
-        match value.mode {
-            Some(Wai::Peer) => config.set_mode(Some(zenoh::scouting::WhatAmI::Peer)),
-            Some(Wai::Client) => config.set_mode(Some(zenoh::scouting::WhatAmI::Client)),
-            Some(Wai::Router) => config.set_mode(Some(zenoh::scouting::WhatAmI::Router)),
-            None => Ok(None),
-        }
-        .unwrap();
-        if !value.connect.is_empty() {
-            config.connect.endpoints = value.connect.iter().map(|v| v.parse().unwrap()).collect();
-        }
-        if !value.listen.is_empty() {
-            config.listen.endpoints = value.listen.iter().map(|v| v.parse().unwrap()).collect();
-        }
-        if value.no_multicast_scouting {
-            config.scouting.multicast.set_enabled(Some(false)).unwrap();
-        }
-        if value.enable_shm {
-            #[cfg(feature = "shared-memory")]
-            config.transport.shared_memory.set_enabled(true).unwrap();
-            #[cfg(not(feature = "shared-memory"))]
-            {
-                println!("enable-shm argument: SHM cannot be enabled, because Zenoh is compiled without shared-memory feature!");
-                std::process::exit(-1);
-            }
-        }
-        Ok(config)
-    }
 }

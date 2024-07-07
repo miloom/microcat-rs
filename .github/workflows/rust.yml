@@ -10,16 +10,6 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  check:
-    name: Check
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - run: rustup show
-      - uses: actions-rs/cargo@v1
-        with:
-          use-cross: true
-          command: check
   fmt:
     name: Rustfmt
     runs-on: ubuntu-latest

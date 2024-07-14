@@ -29,21 +29,14 @@ impl Motor {
 
 pub async fn test(i2c: Arc<Mutex<I2c>>) -> Result<(), Box<dyn Error>> {
     
-    for (idx, motor) in Motor::MOTORS.iter().enumerate() {
-        println!("Writing motor {idx}");
-        motor.write(drv8830::Control::FORWARD, &mut *i2c.lock().unwrap())?;
-    }
-    
 
     let join = tokio::task::spawn(async move {
         loop {
-            for (idx, motor) in Motor::MOTORS.iter().enumerate() {
+            for motor in Motor::MOTORS {
                 let mut data = motor.read::<drv8830::Fault>(&mut *i2c.lock().unwrap()).unwrap();
-                println!("{idx}: {data:?}");
                 data.clear = true;
                 motor.write(data, &mut *i2c.lock().unwrap()).unwrap();
-                println!("Writing motor {idx}");
-                motor.write(drv8830::Control::FORWARD, &mut *i2c.lock().unwrap()).unwrap();
+                motor.write(drv8830::Control::BRAKE, &mut *i2c.lock().unwrap()).unwrap();
             }
         }
     });

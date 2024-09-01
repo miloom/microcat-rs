@@ -11,4 +11,13 @@ signal-hook = "0.3.17"
 tokio = { version = "1.38.0", features = ["macros", "rt-multi-thread"] }
 icm20608g = { git = "https://github.com/miloom/icm20608g.git", features = ["visualize"] }
 drv8830 = { git = "https://github.com/miloom/drv8830.git" }
+bytes = "1.7.1"
+tokio-serial = "5.4.4"
+cobs = "0.2.3"
+prost = "0.13.2"
+prost-types = "0.13.2"
+
+
+[build-dependencies]
+prost-build = "0.13.2"
 

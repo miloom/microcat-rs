@@ -55,3 +55,8 @@ scp ./target/arm-unknown-linux-gnueabihf/debug/microcat-rs raspberry@rpi:/home/r
 ```bash
 ssh raspberry@rpi bash -ic /home/raspberry/microcat-rs
 ```
+
+
+# Current solution for proto files
+1. Copy proto files from `microcat-avr` repo to ./proto directory in this repo
+2. Run this command to generate rust code `protoc --prost_out=src/serial  --prost_opt=enable_type_names=true,compile_well_known_types=true,default_package_filename=encoder.rs -I proto proto/encoder.proto`

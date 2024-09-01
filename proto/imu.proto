@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+message GyroData {
+  float x = 1;
+  float y = 2;
+  float z = 3;
+}
+
+message AccelData {
+  float x = 1;
+  float y = 2;
+  float z = 3;
+}
+
+message Telemetry {
+  GyroData gyro = 1;
+  AccelData accel = 2;
+}

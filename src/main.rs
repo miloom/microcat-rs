@@ -12,6 +12,7 @@ mod imu;
 #[allow(dead_code)]
 mod rgb;
 mod motors;
+mod serial;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {

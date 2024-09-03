@@ -40,7 +40,7 @@ jobs:
           components: clippy
           override: true
       - name: Install dependencies
-        run: sudo apt-get -qq install crossbuild-essential-armhf protobuf-compiler
+        run: sudo apt-get -qq install crossbuild-essential-armhf
       - name: Run clippy
         uses: houseabsolute/actions-rust-cross@v0
         with:
@@ -55,7 +55,9 @@ jobs:
       - run: rustup show
       - uses: Swatinem/rust-cache@v2
       - name: Install dependencies
-        run: sudo apt-get -qq install protobuf-compiler
+        run: sudo apt-get -qq install protobuf-compiler just && cargo install protoc-gen-prost
+      - name: Generate protobuf messages
+        run: just generate
       - name: Build Code
         uses: houseabsolute/actions-rust-cross@v0
         with:

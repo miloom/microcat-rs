@@ -31,6 +31,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: Swatinem/rust-cache@v2
+
       - uses: actions-rs/toolchain@v1.0.6
         with:
           profile: minimal
@@ -40,18 +42,24 @@ jobs:
       - name: Install dependencies
         run: sudo apt-get -qq install crossbuild-essential-armhf protobuf-compiler
       - name: Run clippy
-        run: cargo clippy -- -Dwarnings -Dclippy::pedantic -Dclippy::nursery
+        uses: houseabsolute/actions-rust-cross@v0
+        with:
+          command: "clippy"
+          target: armv7-unknown-linux-gnueabihf
+          args: "-- -Dwarnings -Dclippy::pedantic -Dclippy::nursery"
 
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - run: rustup show
+      - uses: Swatinem/rust-cache@v2
       - name: Install dependencies
         run: sudo apt-get -qq install protobuf-compiler
-      - run: rustup show
-      - uses: actions-rs/cargo@v1
+      - name: Build Code
+        uses: houseabsolute/actions-rust-cross@v0
         with:
-          use-cross: true
-          command: build
-          args: --target armv7-unknown-linux-gnueabihf --release
+          command: "build"
+          target: armv7-unknown-linux-gnueabihf
+          args: "--locked --release"
       

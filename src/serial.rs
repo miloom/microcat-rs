@@ -1,6 +1,9 @@
+#![allow(unused_imports)]
 use prost::Message;
 use tokio_serial::SerialStream;
+use anyhow::anyhow;
 
+#[cfg(feature = "proto")]
 #[allow(clippy::all, clippy::nursery, clippy::pedantic)]
 mod encoder;
 
@@ -29,11 +32,18 @@ pub fn read_step(
                 let len = cobs::decode(message.iter().as_slice(), &mut dest)
                     .expect("Expected to be able to decode COBS packet");
 
+                #[allow(unused_variables)]
                 let message = &dest[..len];
 
+                #[cfg(feature = "proto")]
                 let decoded =
                     encoder::EncoderData::decode(message).inspect_err(|e| println!("{e}"));
+                #[cfg(not(feature = "proto"))]
+                let decoded: Result<(), anyhow::Error> = Ok(());
+
+                #[allow(unused_variables)]
                 if let Ok(msg) = decoded {
+                    #[cfg(feature = "proto")]
                     if msg.location == encoder::Location::FrontRight.into() {
                         println!("{}", msg.position);
                     }

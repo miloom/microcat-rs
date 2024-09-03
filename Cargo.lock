@@ -551,6 +551,7 @@ dependencies = [
 name = "microcat-rs"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "bitvec",
  "bytes",
  "clap",

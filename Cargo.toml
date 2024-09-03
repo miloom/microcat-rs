@@ -16,8 +16,14 @@ tokio-serial = "5.4.4"
 cobs = "0.2.3"
 prost = "0.13.2"
 prost-types = "0.13.2"
+anyhow = "1.0.86"
 
 
 [build-dependencies]
 prost-build = "0.13.2"
+
+
+[features]
+default = []
+proto = []
 

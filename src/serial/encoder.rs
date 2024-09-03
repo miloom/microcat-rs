@@ -3,15 +3,21 @@
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct EncoderData {
-    #[prost(enumeration="Location", tag="1")]
+    #[prost(enumeration = "Location", tag = "1")]
     pub location: i32,
-    #[prost(sint32, tag="2")]
+    #[prost(sint32, tag = "2")]
     pub position: i32,
 }
 impl ::prost::Name for EncoderData {
-const NAME: &'static str = "EncoderData";
-const PACKAGE: &'static str = "";
-fn full_name() -> ::prost::alloc::string::String { "EncoderData".into() }fn type_url() -> ::prost::alloc::string::String { "/EncoderData".into() }}
+    const NAME: &'static str = "EncoderData";
+    const PACKAGE: &'static str = "";
+    fn full_name() -> ::prost::alloc::string::String {
+        "EncoderData".into()
+    }
+    fn type_url() -> ::prost::alloc::string::String {
+        "/EncoderData".into()
+    }
+}
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum Location {

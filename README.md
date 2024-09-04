@@ -1,4 +1,4 @@
-![workflow](https://github.com/miloom/microcat-rs/actions/workflows/rust.yml/badge.svg)
+![build](https://github.com/miloom/microcat-rs/actions/workflows/build.yml/badge.svg) ![lint](https://github.com/miloom/microcat-rs/actions/workflows/lint.yml/badge.svg) ![format](https://github.com/miloom/microcat-rs/actions/workflows/format.yml/badge.svg)
 
 microcat-rs
 ===========

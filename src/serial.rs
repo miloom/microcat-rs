@@ -8,7 +8,8 @@ use anyhow::anyhow;
 mod encoder;
 
 pub fn read_step(
-    serial: &mut SerialStream,
+    // serial: &mut rppal::uart::Uart,
+    serial: &mut tokio_serial::SerialStream, 
     message_buffer: &mut bytes::BytesMut,
     initialized: &mut bool,
 ) {

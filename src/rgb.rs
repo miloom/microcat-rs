@@ -42,7 +42,7 @@ pub fn init_leds() -> Result<Rgb, Box<dyn Error>> {
     })
 }
 
-pub fn test_leds(leds: &mut Rgb) -> Result<(), Box<dyn Error>> {
+pub async fn test_leds(leds: &mut Rgb) -> Result<(), Box<dyn Error>> {
     for r_duty in (0..=100).step_by(5) {
         let r_duty = f64::from(r_duty) / 100.0;
         match &mut leds.red {
@@ -77,8 +77,7 @@ pub fn test_leds(leds: &mut Rgb) -> Result<(), Box<dyn Error>> {
                     }
                 }
 
-                println!("Red {r_duty} Green {g_duty} Blue {b_duty}");
-                thread::sleep(Duration::from_millis(100));
+                thread::sleep(Duration::from_millis(20));
             }
         }
     }

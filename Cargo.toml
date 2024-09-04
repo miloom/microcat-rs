@@ -24,6 +24,6 @@ prost-build = "0.13.2"
 
 
 [features]
-default = []
+default = ["proto"]
 proto = []
 

@@ -20,4 +20,8 @@ generate:
 
 build:
     just generate
-    cargo build
+    cargo build --release --features proto
+
+write:
+  just build
+  scp target/armv7-unknown-linux-gnueabihf/release/microcat-rs raspberry@rpi.local:/home/raspberry

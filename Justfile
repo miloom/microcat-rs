@@ -1,5 +1,5 @@
 CACHE_DIR := ".cache/microcat-avr"
-REPO_URL := "git@github.com:miloom/microcat-avr.git"
+REPO_URL := "https://github.com/miloom/microcat-avr.git"
 
 set ignore-comments
 

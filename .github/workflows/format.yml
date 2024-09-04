@@ -27,8 +27,6 @@ jobs:
           profile: minimal
           toolchain: ${{ matrix.toolchain }}
           components: rustfmt
-      - name: Run cargo check
-        run: cargo install --path . --locked
       - name: "Run formatting"
         uses: actions-rs/cargo@v1
         with:

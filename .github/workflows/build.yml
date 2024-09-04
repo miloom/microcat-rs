@@ -1,0 +1,28 @@
+name: Build
+
+on: [push, pull_request]
+
+env:
+  RUST_BACKTRACE: 1
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup show
+      - uses: Swatinem/rust-cache@v2
+      - name: Set up Prebuilt-MPR
+        run: wget -qO - 'https://proget.makedeb.org/debian-feeds/prebuilt-mpr.pub' | gpg --dearmor | sudo tee /usr/share/keyrings/prebuilt-mpr-archive-keyring.gpg 1> /dev/null && echo "deb [arch=all,$(dpkg --print-architecture) signed-by=/usr/share/keyrings/prebuilt-mpr-archive-keyring.gpg] https://proget.makedeb.org prebuilt-mpr $(lsb_release -cs)" | sudo tee /etc/apt/sources.list.d/prebuilt-mpr.list && sudo apt update
+      - name: Install dependencies
+        run: sudo apt-get -qq install protobuf-compiler just && cargo install protoc-gen-prost
+      - name: Generate protobuf messages
+        run: just generate
+      - name: Build Code
+        uses: houseabsolute/actions-rust-cross@v0
+        with:
+          command: "build"
+          target: armv7-unknown-linux-gnueabihf
+          args: "--locked --release --features proto"
+      

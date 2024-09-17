@@ -22,7 +22,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     #[cfg(feature = "proto")]
     println!("Using Proto");
-    
+
     /*
     let mut rgb = rgb::init_leds()?;
     
@@ -30,7 +30,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         rgb::test_leds(&mut rgb).await.unwrap();
     });*/
 
-    
+
     let gpio = Gpio::new()?;
     let mut pin = gpio.get(19)?.into_output();
     pin.set_low();
@@ -51,7 +51,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let mut serial = tokio_serial::new("/dev/ttyS0", 115_200)
         .timeout(std::time::Duration::from_secs(2))
         .data_bits(DataBits::Eight)
-        .flow_control(FlowControl::Hardware)
+        .flow_control(FlowControl::None)
         .parity(Parity::None)
         .stop_bits(StopBits::One)
         .open_native_async()?;
@@ -68,7 +68,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     for _ in 0..100_000 {
         let accel = imu::get_accel(&mut i2c.lock().unwrap())?;
         // println!("Acceleration x: {} y: {} z: {}", accel.x, accel.y, accel.z);
-        serial::read_step(&mut serial, &mut message_buffer, &mut initialized);
+        serial::read_step(&mut serial, &mut message_buffer, &mut initialized).await;
         thread::sleep(Duration::from_millis(5));
     }
 

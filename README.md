@@ -17,7 +17,16 @@ sudo apt install libc6:armhf libstdc++6:armhf
 ```
 
 ## Build Instructions
-1. Install prerequisites (`gcc-arm-linux-gnueabihf`)
+Depending on the OS running on the raspberry pi you will need to build to different targets.
+If using raspberry pi zero with raspberry pi OS use `arm-unknown-linux-gnueabihf` as the target.  
+If using raspberry pi zero 2 with raspberry pi OS use `armv7-unknown-linux-gnueabihf` as the target
+If the operating system is Ubuntu use `aarch64-unknown-linux-gnu` as the target.
+
+1. Install prerequisites 
+    * If the raspberry is running raspberry pi OS (`gcc-arm-linux-gnueabihf`)
+    * If the raspberry pi is zero 2 using raspberry pi OS (``)
+    * If the raspberry is running Ubuntu (`gcc-aarch64-linux-gnu`)
+
 
 2. Build the binary 
 ```bash
@@ -26,7 +35,7 @@ cargo build
 
 3. Copy the built binary to Raspberry pi with scp 
 ```bash
-scp ./target/arm-unknown-linux-gnueabihf/debug/microcat-rs raspberry@rpi:/home/raspberry
+scp ./target/{your-target}/debug/microcat-rs raspberry@rpi:/home/raspberry
 ```
 
 4. Run the built binary 

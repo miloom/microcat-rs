@@ -1,25 +1,28 @@
 #![allow(unused_imports)]
+use bytes::BytesMut;
 use prost::Message;
 use tokio_serial::SerialStream;
 use anyhow::anyhow;
+use tokio::io::AsyncReadExt;
 
 #[cfg(feature = "proto")]
 #[allow(clippy::all, clippy::nursery, clippy::pedantic)]
 mod encoder;
 
-pub fn read_step(
+pub async fn read_step(
     // serial: &mut rppal::uart::Uart,
     serial: &mut tokio_serial::SerialStream, 
     message_buffer: &mut bytes::BytesMut,
     initialized: &mut bool,
 ) {
-    let mut buf = bytes::BytesMut::with_capacity(1024);
-    match serial.try_read(&mut buf) {
+    // let mut buf = bytes::BytesMut::with_capacity(1024);
+    let mut buf: [u8; 100] = [0; 100];
+    match serial.read(&mut buf).await {
         Ok(0) => {
             println!("No data read, returning");
         }
-        Ok(_) => {
-            let bytes = buf.split().freeze();
+        Ok(n) => {
+            let bytes: BytesMut = buf[0..n].into_iter().collect::<BytesMut>().freeze().into();
             if *initialized {
                 message_buffer.extend(bytes);
             } else if let Some(start) = bytes.iter().rposition(|&v| v == 0) {
@@ -29,6 +32,7 @@ pub fn read_step(
 
             while let Some(end) = message_buffer.iter().position(|&v| v == 0) {
                 let message = message_buffer.split_to(end + 1);
+                //println!("Message {message:?}");
                 let mut dest = [0u8; 256];
                 let len = cobs::decode(message.iter().as_slice(), &mut dest)
                     .expect("Expected to be able to decode COBS packet");
@@ -44,12 +48,14 @@ pub fn read_step(
 
                 #[allow(unused_variables)]
                 if let Ok(msg) = decoded {
+                    /*
                     #[cfg(feature = "proto")]
                     if msg.location == encoder::Location::FrontRight.into() {
                         println!("{}", msg.position);
                     }
+*/
                 } else {
-                    println!("Failed to decode");
+                    eprintln!("Failed to decode");
                 }
             }
         }

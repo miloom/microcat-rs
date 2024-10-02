@@ -11,6 +11,7 @@ use tokio_serial::{DataBits, FlowControl, Parity, SerialPortBuilderExt, StopBits
 #[allow(dead_code)]
 mod consts;
 mod imu;
+#[allow(dead_code)]
 mod motors;
 #[allow(dead_code)]
 mod rgb;
@@ -19,6 +20,34 @@ mod serial;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     // println!("Blinking an LED on a {}.", DeviceInfo::new()?.model());
+    rosrust::init("talker_test");
+
+    let chatter_pub = rosrust::publish("chatter", 2).unwrap();
+    chatter_pub.wait_for_subscribers(None).unwrap();
+
+    let log_names = rosrust::param("~log_names").unwrap().get().unwrap_or(false);
+
+    let mut count = 0;
+
+    let rate = rosrust::rate(10.0); //10Hz
+
+    while rosrust::is_ok() {
+        let msg = rosrust_msg::microcat_msgs::string {
+            data: format!("hello world from rosrust {}", count),
+        };
+
+        rosrust::ros_info!("Publishing {}", msg.data);
+
+        chatter_pub.send(msg).unwrap();
+
+        if log_names {
+            rosrust::ros_info!("Subscriber names: {:?}", chatter_pub.subscriber_names());
+        }
+
+        rate.sleep();
+
+        count += 1;
+    }
 
     #[cfg(feature = "proto")]
     println!("Using Proto");

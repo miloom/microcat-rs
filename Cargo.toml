@@ -17,6 +17,8 @@ cobs = "0.2.3"
 prost = "0.13.2"
 prost-types = "0.13.2"
 anyhow = "1.0.86"
+rosrust = "0.9.11"
+rosrust_msg = "0.1.7"
 
 
 [build-dependencies]

@@ -1,4 +1,9 @@
-/target
-src/serial/
+src/microcat-rs/target
+src/microcat-rs/src/serial/
+
+src/ros2
+log
+install
+build
 
 .cache

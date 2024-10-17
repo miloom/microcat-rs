@@ -22,6 +22,10 @@ build:
     just generate
     cargo build --features proto
 
+
+setup:
+  vcs import src < src/ros2_rust/ros2_rust_humble.repos
+
 write:
   just build
   scp target/armv7-unknown-linux-gnueabihf/release/microcat-rs raspberry@rpi.local:/home/raspberry

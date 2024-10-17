@@ -1,1 +1,0 @@
-SUBSYSTEM=="gpiomem", KERNEL=="gpiomem", GROUP="gpio", MODE="0770"

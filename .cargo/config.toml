@@ -1,89 +1,32 @@
-[patch.crates-io.rclrs]
-path = "/home/neverknown/opt/workspace/install/rclrs/share/rclrs/rust"
-
-[patch.crates-io.rosidl_runtime_rs]
-path = "/home/neverknown/opt/workspace/install/rosidl_runtime_rs/share/rosidl_runtime_rs/rust"
-
-[patch.crates-io.microcat-rs]
-path = "/home/neverknown/opt/workspace/install/microcat_rs/share/microcat-rs/rust"
-
-[patch.crates-io.visualization_msgs]
-path = "/home/neverknown/opt/workspace/install/visualization_msgs/share/visualization_msgs/rust"
-
-[patch.crates-io.rclrs_tests]
-path = "/home/neverknown/opt/workspace/install/rclrs_tests/share/rclrs_tests/rust"
-
 [patch.crates-io.test_msgs]
-path = "/home/neverknown/opt/workspace/install/test_msgs/share/test_msgs/rust"
+path = "/home/neverknown/projects/workspace/install/test_msgs/share/test_msgs/rust"
 
-[patch.crates-io.examples_rclrs_minimal_client_service]
-path = "/home/neverknown/opt/workspace/install/examples_rclrs_minimal_client_service/share/examples_rclrs_minimal_client_service/rust"
-
-[patch.crates-io.example_interfaces]
-path = "/home/neverknown/opt/workspace/install/example_interfaces/share/example_interfaces/rust"
-
-[patch.crates-io.action_msgs]
-path = "/home/neverknown/opt/workspace/install/action_msgs/share/action_msgs/rust"
-
-[patch.crates-io.unique_identifier_msgs]
-path = "/home/neverknown/opt/workspace/install/unique_identifier_msgs/share/unique_identifier_msgs/rust"
-
-[patch.crates-io.trajectory_msgs]
-path = "/home/neverknown/opt/workspace/install/trajectory_msgs/share/trajectory_msgs/rust"
-
-[patch.crates-io.stereo_msgs]
-path = "/home/neverknown/opt/workspace/install/stereo_msgs/share/stereo_msgs/rust"
-
-[patch.crates-io.std_srvs]
-path = "/home/neverknown/opt/workspace/install/std_srvs/share/std_srvs/rust"
-
-[patch.crates-io.shape_msgs]
-path = "/home/neverknown/opt/workspace/install/shape_msgs/share/shape_msgs/rust"
-
-[patch.crates-io.sensor_msgs]
-path = "/home/neverknown/opt/workspace/install/sensor_msgs/share/sensor_msgs/rust"
-
-[patch.crates-io.republisher_node]
-path = "/home/neverknown/opt/workspace/install/republisher_node/share/republisher_node/rust"
-
-[patch.crates-io.nav_msgs]
-path = "/home/neverknown/opt/workspace/install/nav_msgs/share/nav_msgs/rust"
-
-[patch.crates-io.diagnostic_msgs]
-path = "/home/neverknown/opt/workspace/install/diagnostic_msgs/share/diagnostic_msgs/rust"
-
-[patch.crates-io.geometry_msgs]
-path = "/home/neverknown/opt/workspace/install/geometry_msgs/share/geometry_msgs/rust"
-
-[patch.crates-io.examples_rclrs_minimal_pub_sub]
-path = "/home/neverknown/opt/workspace/install/examples_rclrs_minimal_pub_sub/share/examples_rclrs_minimal_pub_sub/rust"
-
-[patch.crates-io.actionlib_msgs]
-path = "/home/neverknown/opt/workspace/install/actionlib_msgs/share/actionlib_msgs/rust"
-
-[patch.crates-io.std_msgs]
-path = "/home/neverknown/opt/workspace/install/std_msgs/share/std_msgs/rust"
-
-[patch.crates-io.statistics_msgs]
-path = "/home/neverknown/opt/workspace/install/statistics_msgs/share/statistics_msgs/rust"
-
-[patch.crates-io.examples_rclrs_message_demo]
-path = "/home/neverknown/opt/workspace/install/examples_rclrs_message_demo/share/examples_rclrs_message_demo/rust"
+[patch.crates-io.rclrs]
+path = "/home/neverknown/projects/workspace/install/rclrs/share/rclrs/rust"
 
 [patch.crates-io.rosgraph_msgs]
-path = "/home/neverknown/opt/workspace/install/rosgraph_msgs/share/rosgraph_msgs/rust"
-
-[patch.crates-io.rclrs_example_msgs]
-path = "/home/neverknown/opt/workspace/install/rclrs_example_msgs/share/rclrs_example_msgs/rust"
-
-[patch.crates-io.composition_interfaces]
-path = "/home/neverknown/opt/workspace/install/composition_interfaces/share/composition_interfaces/rust"
+path = "/home/neverknown/projects/workspace/install/rosgraph_msgs/share/rosgraph_msgs/rust"
 
 [patch.crates-io.rcl_interfaces]
-path = "/home/neverknown/opt/workspace/install/rcl_interfaces/share/rcl_interfaces/rust"
+path = "/home/neverknown/projects/workspace/install/rcl_interfaces/share/rcl_interfaces/rust"
 
-[patch.crates-io.lifecycle_msgs]
-path = "/home/neverknown/opt/workspace/install/lifecycle_msgs/share/lifecycle_msgs/rust"
+[patch.crates-io.action_msgs]
+path = "/home/neverknown/projects/workspace/install/action_msgs/share/action_msgs/rust"
+
+[patch.crates-io.unique_identifier_msgs]
+path = "/home/neverknown/projects/workspace/install/unique_identifier_msgs/share/unique_identifier_msgs/rust"
 
 [patch.crates-io.builtin_interfaces]
-path = "/home/neverknown/opt/workspace/install/builtin_interfaces/share/builtin_interfaces/rust"
+path = "/home/neverknown/projects/workspace/install/builtin_interfaces/share/builtin_interfaces/rust"
+
+[patch.crates-io.rosidl_runtime_rs]
+path = "/home/neverknown/projects/workspace/install/rosidl_runtime_rs/share/rosidl_runtime_rs/rust"
+
+[patch.crates-io.example_interfaces]
+path = "/home/neverknown/projects/workspace/install/example_interfaces/share/example_interfaces/rust"
+
+[patch.crates-io.std_msgs]
+path = "/home/neverknown/projects/workspace/install/std_msgs/share/std_msgs/rust"
+
+[patch.crates-io.rclrs_example_msgs]
+path = "/home/neverknown/projects/workspace/install/rclrs_example_msgs/share/rclrs_example_msgs/rust"

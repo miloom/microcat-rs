@@ -6,66 +6,37 @@ microcat-rs
 Rust project for _Microcat_.
 
 ## Dependencies
+This needs to be built on Ubuntu machine because of the ROS2 dependency. The version of the ubuntu depends on the version of ROS used. Currently the project uses ROS2 Humble and needs Ubuntu 22.04 to be built and ran.
+
+The Microcat robot uses an ARM64V8 processor, which means that the code has to be built on the same architecture.
+
+
 1. Install rust on the development machine 
 ```bash
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 ```
 
-2. Install the static libraries to raspberry pi
+2. Install protobuf compiler
 ```bash
-sudo apt install libc6:armhf libstdc++6:armhf
+sudo apt install protobuf-compiler -y
+protoc --version # Ensure you are using compiler version 3+
 ```
 
+3. Install ROS2
+```bash
+sudo apt install software-properties-common -y
+sudo add-apt-repository universe
+sudo apt update && sudo apt install curl -y
+sudo curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" | sudo tee /etc/apt/sources.list.d/ros2.list > /dev/null
+sudo apt install ros-humble-ros-base ros-dev-tools -y
+```
+
+
 ## Build Instructions
-Depending on the OS running on the raspberry pi you will need to build to different targets.
-If using raspberry pi zero with raspberry pi OS use `arm-unknown-linux-gnueabihf` as the target.  
-If using raspberry pi zero 2 with raspberry pi OS use `armv7-unknown-linux-gnueabihf` as the target
-If the operating system is Ubuntu use `aarch64-unknown-linux-gnu` as the target.
+When building you have to specifiy features depending on whether the target that the code will be ran on is a raspberry pi or not. These features enable or disable specific features which allow the same code to be ran on devicest that are not raspberry pi. Most functionality will be missing when running on another device, but it allows for simple verification.
 
-1. Install prerequisites 
-    * If the raspberry is running raspberry pi OS (`gcc-arm-linux-gnueabihf`)
-    * If the raspberry pi is zero 2 using raspberry pi OS (``)
-    * If the raspberry is running Ubuntu (`gcc-aarch64-linux-gnu`)
-
-
-2. Build the binary 
+1. Build the binary 
 ```bash
 cargo build
 ```
-
-3. Copy the built binary to Raspberry pi with scp 
-```bash
-scp ./target/{your-target}/debug/microcat-rs raspberry@rpi:/home/raspberry
-```
-
-4. Run the built binary 
-```bash
-ssh raspberry@rpi bash -ic /home/raspberry/microcat-rs
-```
-
-### Using Cross-rs
-
-1. Install docker and podman 
-```bash
-sudo apt install docker podman
-```
-
-2. Install cross-rs 
-```bash
-cargo install cross --git https://github.com/cross-rs/cross
-```
-
-3. Copy the built binary to Raspberry pi with scp 
-```bash
-scp ./target/arm-unknown-linux-gnueabihf/debug/microcat-rs raspberry@rpi:/home/raspberry
-```
-
-4. Run the built binary 
-```bash
-ssh raspberry@rpi bash -ic /home/raspberry/microcat-rs
-```
-
-
-# Current solution for proto files
-1. Copy proto files from `microcat-avr` repo to ./proto directory in this repo
-2. Run this command to generate rust code `protoc --prost_out=src/serial  --prost_opt=enable_type_names=true,compile_well_known_types=true,default_package_filename=encoder.rs -I proto proto/encoder.proto`

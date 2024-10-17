@@ -1,4 +1,0 @@
-[toolchain]
-channel = "stable"
-targets = ["arm-unknown-linux-gnueabihf", "armv7-unknown-linux-gnueabihf"]
-profile = "minimal"

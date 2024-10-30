@@ -1,9 +1,7 @@
 set ignore-comments
 
 build:
-    just generate
     cargo build --features proto
-
 
 setup:
   vcs import src < src/ros2_rust/ros2_rust_humble.repos

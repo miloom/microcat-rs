@@ -32,11 +32,30 @@ echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-a
 sudo apt install ros-humble-ros-base ros-dev-tools -y
 ```
 
+4. Install ROS2 Rust
+```bash
+sudo apt install -y git libclang-dev python3-pip python3-vcstool
+cargo install cargo-ament-build
+pip install git+https://github.com/colcon/colcon-cargo.git
+pip install git+https://github.com/colcon/colcon-ros-cargo.git
+just setup
+```
+For pip packages in ubuntu distributions 24.04 and above it's recommended to use pipx.
+Pip no longer allows installing directly to system packages.
+for this solution use:
+```bash
+sudo apt install pipx
+pipx install git+https://github.com/colcon/colcon-cargo.git --include-deps
+pipx install git+https://github.com/colcon/colcon-ros-cargo.git --include-deps
+```
+
 
 ## Build Instructions
 When building you have to specifiy features depending on whether the target that the code will be ran on is a raspberry pi or not. These features enable or disable specific features which allow the same code to be ran on devicest that are not raspberry pi. Most functionality will be missing when running on another device, but it allows for simple verification.
 
+When building you have to source your ROS2 install
+
 1. Build the binary 
 ```bash
-cargo build
+colcon build
 ```

@@ -9,3 +9,5 @@ setup:
 write:
   just build
   scp target/aarch64-unknown-linux-gnueabihf/release/microcat-rs raspberry@rpi.local:~/
+
+

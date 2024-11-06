@@ -42,12 +42,8 @@ just setup
 ```
 For pip packages in ubuntu distributions 24.04 and above it's recommended to use pipx.
 Pip no longer allows installing directly to system packages.
-for this solution use:
-```bash
-sudo apt install pipx
-pipx install git+https://github.com/colcon/colcon-cargo.git --include-deps
-pipx install git+https://github.com/colcon/colcon-ros-cargo.git --include-deps
-```
+Testing with pipx showed that it fails to install the packages correctly which causes colcon build to fail.
+To see if the packages have been installed correctly you can run ```colcon list``` and verify that the packages rosidl_runtime_rs and rosidl_generator_rs do not end with *(ros.ament_cargo)*
 
 
 ## Build Instructions

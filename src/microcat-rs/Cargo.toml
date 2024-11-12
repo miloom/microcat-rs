@@ -30,7 +30,7 @@ serde = { version = "1.0.210", features = ["derive"] }
 
 
 [features]
-default = ["proto"]
+default = ["proto", "rppal"]
 proto = []
 rppal = []
 

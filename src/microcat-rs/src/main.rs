@@ -1,6 +1,11 @@
 use std::error::Error;
 use std::sync::{Arc, Mutex};
+use std::thread;
+use std::time::Duration;
+use rppal::gpio::Gpio;
+use rppal::i2c::I2c;
 use std_msgs::msg::String as StringMsg;
+use tokio_serial::{DataBits, FlowControl, Parity, SerialPortBuilderExt, StopBits};
 
 #[allow(dead_code)]
 mod consts;

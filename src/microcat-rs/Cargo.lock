@@ -1606,10 +1606,6 @@ name = "lifecycle_msgs"
 version = "1.2.1"
 
 [[patch.unused]]
-name = "microcat-rs"
-version = "0.1.0"
-
-[[patch.unused]]
 name = "nav_msgs"
 version = "4.2.4"
 
@@ -1624,10 +1620,6 @@ version = "0.4.1"
 [[patch.unused]]
 name = "rosgraph_msgs"
 version = "1.2.1"
-
-[[patch.unused]]
-name = "rust_pubsub"
-version = "0.1.0"
 
 [[patch.unused]]
 name = "sensor_msgs"
@@ -1660,7 +1652,3 @@ version = "4.2.4"
 [[patch.unused]]
 name = "unique_identifier_msgs"
 version = "2.2.1"
-
-[[patch.unused]]
-name = "visualization_msgs"
-version = "4.2.4"

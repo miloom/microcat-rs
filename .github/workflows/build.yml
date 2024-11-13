@@ -25,4 +25,15 @@ jobs:
         run: vcs import src < src/ros2_rust/ros2_rust_humble.repos
       - name: Build
         run: source /opt/ros/humble/setup.bash && echo ${AMENT_PREFIX_PATH} && colcon build --packages-up-to microcat_rs --merge-install
+
+      - name: Package Install
+        run: tar cvJf microcat.tar.xz install
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: microcat
+          path: microcat.tar.xz
+          if-no-files-found:
+            error: Failed to find the archive
+          compression-level: 0
       - run: echo "This job's status is ${{ job.status }}."

@@ -33,5 +33,4 @@ jobs:
         with:
           name: microcat
           path: microcat.tar.xz
-          compression-level: 0
       - run: echo "This job's status is ${{ job.status }}."

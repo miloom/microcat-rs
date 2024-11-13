@@ -68,18 +68,19 @@ async fn main() -> Result<(), Box<dyn Error>> {
     // println!("Blinking an LED on a {}.", DeviceInfo::new()?.model());
 
     #[cfg(feature = "ros")]
-    {
-        let context = rclrs::Context::new(std::env::args())?;
-        let microcat_node = Arc::new(MicrocatNode::new(&context)?);
-        let microcat_other_thread = Arc::clone(&microcat_node);
-        std::thread::spawn(move || -> Result<(), rclrs::RclrsError> {
-            loop {
-                use std::time::Duration;
-                std::thread::sleep(Duration::from_millis(1000));
-                microcat_other_thread.republish()?;
-            }
-        });
-    }
+    let context = rclrs::Context::new(std::env::args())?;
+    #[cfg(feature = "ros")]
+    let microcat_node = Arc::new(MicrocatNode::new(&context)?);
+    #[cfg(feature = "ros")]
+    let microcat_other_thread = Arc::clone(&microcat_node);
+    #[cfg(feature = "ros")]
+    std::thread::spawn(move || -> Result<(), rclrs::RclrsError> {
+        loop {
+            use std::time::Duration;
+            std::thread::sleep(Duration::from_millis(1000));
+            microcat_other_thread.republish()?;
+        }
+    });
     #[cfg(feature = "proto")]
     let mut serial = {
         println!("Using Proto");

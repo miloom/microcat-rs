@@ -33,7 +33,5 @@ jobs:
         with:
           name: microcat
           path: microcat.tar.xz
-          if-no-files-found:
-            error: Failed to find the archive
           compression-level: 0
       - run: echo "This job's status is ${{ job.status }}."

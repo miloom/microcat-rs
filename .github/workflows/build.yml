@@ -2,17 +2,27 @@ name: Build code
 run-name: ${{ github.actor }} is building
 on: [push]
 jobs:
-  Explore-GitHub-Actions:
+  Build-code:
     runs-on: [self-hosted, linux, arm64]
     steps:
       - run: echo "The job was automatically triggered by a ${{ github.event_name }} event."
       - name: Check out repository code
         uses: actions/checkout@v4
+        with:
+          submodules: 'true'
       - run: echo "The ${{ github.repository }} repository has been cloned to the runner."
       - run: echo "The workflow is now ready to build your code on the runner."
       - name: List files in the repository
         run: |
           ls ${{ github.workspace }}
+      - name: Install cargo-ament-build
+        run: cargo install cargo-ament-build
+      - name: Install colcon plugins
+        run: pip install git+https://github.com/colcon/colcon-cargo.git && pip install git+https://github.com/colcon/colcon-ros-cargo.git
+      - name: Install apt packages
+        run: echo ${{ secrets.USERPWD }} | sudo -S apt install ros-humble-ros-base ros-dev-tools libclang-dev -y
+      - name: Setup for ROS2 Humble
+        run: vcs import src < src/ros2_rust/ros2_rust_humble.repos
       - name: Build
-        run: colcon build --packages-up-to microcat_rs --merge-install
+        run: source /opt/ros/humble/setup.bash && echo ${AMENT_PREFIX_PATH} && colcon build --packages-up-to microcat_rs --merge-install
       - run: echo "This job's status is ${{ job.status }}."

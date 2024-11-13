@@ -1,1 +1,2 @@
 SUBSYSTEM=="gpiomem", KERNEL=="gpiomem", GROUP="gpio", MODE="0770"
+SUBSYSTEM=="tty", KERNEL=="ttyS0", GROUP="dialout", MODE="0660"

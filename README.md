@@ -53,5 +53,5 @@ When building you have to source your ROS2 install
 
 1. Build the binary 
 ```bash
-colcon build
+colcon build --merge-install --packages-up-to microcat_rs
 ```

@@ -7,7 +7,7 @@ use tokio::io::AsyncReadExt;
 
 #[cfg(feature = "proto")]
 #[allow(clippy::all, clippy::nursery, clippy::pedantic)]
-mod encoder;
+mod message;
 
 pub async fn read_step(
     // serial: &mut rppal::uart::Uart,

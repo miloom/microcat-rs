@@ -6,7 +6,7 @@ edition = "2021"
 [dependencies]
 bitvec = "1.0.1"
 clap = { version = "4.5.7", features = ["derive"] }
-rppal = "0.18.0"
+rppal = { version = "0.18.0", optional = true }
 signal-hook = "0.3.17"
 tokio = { version = "1.38.0", features = ["io-util", "macros", "rt-multi-thread"] }
 icm20608g = { git = "https://github.com/miloom/icm20608g.git", features = ["visualize"] }
@@ -17,8 +17,8 @@ cobs = "0.2.3"
 prost = "0.13.2"
 prost-types = "0.13.2"
 anyhow = "1.0.86"
-rclrs = "*"
-std_msgs = "*"
+rclrs = { version="*", optional = true }
+std_msgs = { version="*", optional = true }
 
 serde = { version = "1.0.210", features = ["derive"] }
 
@@ -30,7 +30,8 @@ serde = { version = "1.0.210", features = ["derive"] }
 
 
 [features]
-default = ["proto", "rppal"]
+default = ["proto", "rppal", "ros"]
 proto = []
-rppal = []
+rppal = ["dep:rppal"]
+ros = ["dep:std_msgs", "dep:rclrs"]
 

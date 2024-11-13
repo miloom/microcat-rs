@@ -8,6 +8,12 @@ use tokio::io::AsyncReadExt;
 #[cfg(feature = "proto")]
 #[allow(clippy::all, clippy::nursery, clippy::pedantic)]
 mod message;
+#[cfg(feature = "proto")]
+
+mod encoder;
+#[cfg(feature = "proto")]
+
+mod imu;
 
 pub async fn read_step(
     // serial: &mut rppal::uart::Uart,
@@ -42,18 +48,23 @@ pub async fn read_step(
 
                 #[cfg(feature = "proto")]
                 let decoded =
-                    encoder::EncoderData::decode(message).inspect_err(|e| println!("{e}"));
+                    message::Message::decode(message).inspect_err(|e| println!("{e}"));
                 #[cfg(not(feature = "proto"))]
                 let decoded: Result<(), anyhow::Error> = Ok(());
 
                 #[allow(unused_variables)]
                 if let Ok(msg) = decoded {
-                    /*
+
                     #[cfg(feature = "proto")]
-                    if msg.location == encoder::Location::FrontRight.into() {
-                        println!("{}", msg.position);
+                    match msg.data.unwrap() {
+                        message::message::Data::Encoder(msg) => {
+                            if msg.position == encoder::Location::FrontRight.into() {
+                                println!("{}", msg.position);
+                            }
+                        },
+                        message::message::Data::Telemetry(msg) => {
+                        }
                     }
-*/
                 } else {
                     eprintln!("Failed to decode");
                 }

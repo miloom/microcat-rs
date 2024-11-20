@@ -3,17 +3,17 @@ use bytes::BytesMut;
 use prost::Message;
 use tokio_serial::SerialStream;
 use anyhow::anyhow;
-use tokio::io::AsyncReadExt;
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 #[cfg(feature = "proto")]
 #[allow(clippy::all, clippy::nursery, clippy::pedantic)]
 mod message;
 #[cfg(feature = "proto")]
-
 mod encoder;
 #[cfg(feature = "proto")]
-
 mod imu;
+#[cfg(feature = "proto")]
+mod motor;
 
 pub async fn read_step(
     // serial: &mut rppal::uart::Uart,
@@ -64,6 +64,9 @@ pub async fn read_step(
                         },
                         message::message::Data::Telemetry(msg) => {
                         }
+                        message::message::Data::Motor(msg) => {
+
+                        }
                     }
                 } else {
                     eprintln!("Failed to decode");
@@ -74,4 +77,19 @@ pub async fn read_step(
             eprintln!("Failed to read from serial port: {e:?}");
         }
     }
+}
+
+pub async fn send_motor_pos(serial: &mut tokio_serial::SerialStream, target_position: f32, amplitude: f32, frequency: f32) {
+    let motor = motor::MotorTarget {
+        amplitude,
+        frequency,
+        target_position
+    };
+    let mut message = message::Message::default();
+    message.data = Some(message::message::Data::Motor(motor));
+    let mut buf = bytes::BytesMut::new();
+    message.encode(&mut buf).unwrap();
+    let mut dest = [0u8; 128];
+    cobs::encode(buf.iter().as_slice(), &mut dest);
+    serial.write(&buf).await.unwrap();
 }

@@ -1,12 +1,17 @@
+#[cfg(feature = "rppal")]
+use rppal::gpio::Gpio;
+#[cfg(feature = "rppal")]
+use rppal::i2c::I2c;
 use std::error::Error;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
-use rppal::gpio::Gpio;
-use rppal::i2c::I2c;
 #[cfg(feature = "ros")]
 use std_msgs::msg::String as StringMsg;
-use tokio_serial::{DataBits, FlowControl, Parity, SerialPortBuilderExt, StopBits};
+use tokio::io::AsyncReadExt;
+use tokio::signal;
+use tokio::sync::Mutex;
+use tokio_serial::{DataBits, FlowControl, Parity, SerialPortBuilderExt, SerialStream, StopBits};
 
 #[allow(dead_code)]
 mod consts;
@@ -26,14 +31,14 @@ struct MicrocatNode {
     node: Arc<rclrs::Node>,
     _subscription: Arc<rclrs::Subscription<StringMsg>>,
     publisher: Arc<rclrs::Publisher<StringMsg>>,
-    data: Arc<Mutex<Option<StringMsg>>>,
+    data: Arc<std::sync::Mutex<Option<StringMsg>>>,
 }
 
 #[cfg(feature = "ros")]
 impl MicrocatNode {
     fn new(context: &rclrs::Context) -> Result<Self, rclrs::RclrsError> {
         let node = rclrs::Node::new(context, "microcat_node")?;
-        let data = Arc::new(Mutex::new(None));
+        let data = Arc::new(std::sync::Mutex::new(None));
         let data_cb = Arc::clone(&data);
 
         let publisher = node.create_publisher("out_topic", rclrs::QOS_PROFILE_DEFAULT)?;
@@ -43,16 +48,15 @@ impl MicrocatNode {
                 rclrs::QOS_PROFILE_DEFAULT,
                 move |msg: StringMsg| {
                     *data_cb.lock().unwrap() = Some(msg);
-                }
+                },
             )?
         };
-        Ok(Self{
+        Ok(Self {
             node,
             _subscription,
             publisher,
             data,
         })
-
     }
 
     fn republish(&self) -> Result<(), rclrs::RclrsError> {
@@ -61,6 +65,21 @@ impl MicrocatNode {
         }
         Ok(())
     }
+}
+
+async fn handle_signals(serial_port: Arc<Mutex<SerialStream>>) {
+    // Wait for a termination signal (Ctrl+C or similar)
+    let _ = signal::ctrl_c().await;
+
+    println!("Signal received, cleaning up...");
+
+    // Close the serial port
+    let mut port_guard = serial_port.lock().await;
+
+    // Clean up logic if needed
+    println!("Serial port cleanup completed.");
+
+    drop(port_guard); // Explicitly release the lock (optional, as it will be dropped automatically)
 }
 
 #[tokio::main]
@@ -82,7 +101,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         }
     });
     #[cfg(feature = "proto")]
-    let mut serial = {
+    let mut serial = Arc::new(Mutex::new({
         println!("Using Proto");
         tokio_serial::new("/dev/ttyS0", 115_200)
             .timeout(std::time::Duration::from_secs(2))
@@ -91,10 +110,14 @@ async fn main() -> Result<(), Box<dyn Error>> {
             .parity(Parity::None)
             .stop_bits(StopBits::One)
             .open_native_async()?
-    };
+    }));
+    let sp = serial.clone();
+    tokio::spawn(async move {
+        handle_signals(sp).await;
+    });
     /*
     let mut rgb = rgb::init_leds()?;
-    
+
     tokio::task::spawn(async move {
         rgb::test_leds(&mut rgb).await.unwrap();
     });*/
@@ -112,20 +135,12 @@ async fn main() -> Result<(), Box<dyn Error>> {
         println!("I2c: {:?}", i2c.capabilities());
 
         println!("Motors test");
-        let i2c = Arc::from(Mutex::from(i2c));
+        let i2c = Arc::from(std::sync::Mutex::from(i2c));
         // motors::test(i2c.clone()).await?;
 
         println!("IMU");
         imu::setup(&mut i2c.lock().unwrap())?;
     }
-
-
-    /*
-    let mut serial = rppal::uart::Uart::with_path("/dev/serial0",115_200, rppal::uart::Parity::None, 8, 1)?;
-    serial.set_read_mode(16, std::time::Duration::ZERO)?;
-    dbg!(serial.input_len()?);
-    dbg!(serial.is_read_blocking());
-    */
     let mut message_buffer = bytes::BytesMut::with_capacity(1024);
     let mut initialized = false;
 
@@ -133,12 +148,23 @@ async fn main() -> Result<(), Box<dyn Error>> {
         // let accel = imu::get_accel(&mut i2c.lock().unwrap())?;
         // println!("Acceleration x: {} y: {} z: {}", accel.x, accel.y, accel.z);
         #[cfg(feature = "proto")]
-        serial::read_step(&mut serial, &mut message_buffer, &mut initialized).await;
-        thread::sleep(Duration::from_millis(5));
+        // serial::read_step(&mut serial, &mut message_buffer, &mut initialized).await;
+        let mut buf = [0u8; 128];
+        {
+            let mut port_guard = serial.lock().await;
+            if let Ok(size) = port_guard.read(&mut buf).await {
+                println!("{}", buf.iter().map(|&b| b as char).collect::<String>());
+            } else {
+                #[cfg(feature = "proto")]
+                serial::send_motor_pos(&mut port_guard, 10.0, 20.0, 30.0).await;
+                println!("Sending motor pos");
+            }
+        }
+
+        tokio::time::sleep(Duration::from_millis(10)).await;
     }
 
     #[cfg(feature = "ros")]
     rclrs::spin(Arc::clone(&microcat_node.node))?;
     Ok(())
-
 }

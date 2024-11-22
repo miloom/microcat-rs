@@ -122,8 +122,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         rgb::test_leds(&mut rgb).await.unwrap();
     });*/
 
-    #[cfg(feature = "rppal")]
-    {
+
         let gpio = Gpio::new()?;
         let mut pin = gpio.get(19)?.into_output();
         pin.set_low();
@@ -140,7 +139,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
         println!("IMU");
         imu::setup(&mut i2c.lock().unwrap())?;
-    }
+
     let mut message_buffer = bytes::BytesMut::with_capacity(1024);
     let mut initialized = false;
 

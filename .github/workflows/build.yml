@@ -25,7 +25,7 @@ jobs:
         run: vcs import src < src/ros2_rust/ros2_rust_humble.repos
         
       - name: Restore build cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: build/
           key: build-cache-${{ github.ref }}
@@ -44,7 +44,7 @@ jobs:
       - run: echo "This job's status is ${{ job.status }}."
       - name: Save cache
         if: success()
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: build/
           key: build-cache-${{ github.ref }}

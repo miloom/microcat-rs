@@ -91,5 +91,5 @@ pub async fn send_motor_pos(serial: &mut SerialStream, target_position: f32, amp
     message.encode(&mut buf).unwrap();
     let mut dest = [0u8; 128];
     cobs::encode(buf.iter().as_slice(), &mut dest);
-    serial.write(&buf).await.unwrap();
+    serial.write(&dest).await.unwrap();
 }

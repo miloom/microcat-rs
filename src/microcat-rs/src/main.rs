@@ -112,15 +112,15 @@ async fn main() -> Result<(), Box<dyn Error>> {
         new_pin.set_low();
         println!("{}, {}", pin.is_set_low(), new_pin.is_set_low());
 
-        let i2c = I2c::new()?;
-        println!("I2c: {:?}", i2c.capabilities());
+        // let i2c = I2c::new()?;
+        // println!("I2c: {:?}", i2c.capabilities());
 
         println!("Motors test");
-        let i2c = Arc::from(std::sync::Mutex::from(i2c));
+        // let i2c = Arc::from(std::sync::Mutex::from(i2c));
         // motors::test(i2c.clone()).await?;
 
         println!("IMU");
-        imu::setup(&mut i2c.lock().unwrap())?;
+        // imu::setup(&mut i2c.lock().unwrap())?;
 
     let mut message_buffer = bytes::BytesMut::with_capacity(1024);
     let mut initialized = false;

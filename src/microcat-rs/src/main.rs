@@ -97,7 +97,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
             .stop_bits(StopBits::One)
             .open_native_async()?
     }));
-    let sp = serial.clone();
     /*
     let mut rgb = rgb::init_leds()?;
 
@@ -133,7 +132,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         let mut buf = [0u8; 128];
         {
             let mut port_guard = serial.lock().await;
-            if let Ok(size) = port_guard.read(&mut buf).await {
+            if let Ok(size) = port_guard.try_read(&mut buf).await {
                 println!("{}", buf.iter().map(|&b| b as char).collect::<String>());
             } else {
                 serial::send_motor_pos(&mut port_guard, 10.0, 20.0, 30.0).await;

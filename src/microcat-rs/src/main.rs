@@ -67,20 +67,6 @@ impl MicrocatNode {
     }
 }
 
-async fn handle_signals(serial_port: Arc<Mutex<SerialStream>>) {
-    // Wait for a termination signal (Ctrl+C or similar)
-    let _ = signal::ctrl_c().await;
-
-    println!("Signal received, cleaning up...");
-
-    // Close the serial port
-    let mut port_guard = serial_port.lock().await;
-
-    // Clean up logic if needed
-    println!("Serial port cleanup completed.");
-
-    drop(port_guard); // Explicitly release the lock (optional, as it will be dropped automatically)
-}
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
@@ -112,9 +98,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
             .open_native_async()?
     }));
     let sp = serial.clone();
-    tokio::spawn(async move {
-        handle_signals(sp).await;
-    });
     /*
     let mut rgb = rgb::init_leds()?;
 
@@ -146,7 +129,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
     for _ in 0..100_000 {
         // let accel = imu::get_accel(&mut i2c.lock().unwrap())?;
         // println!("Acceleration x: {} y: {} z: {}", accel.x, accel.y, accel.z);
-        #[cfg(feature = "proto")]
         // serial::read_step(&mut serial, &mut message_buffer, &mut initialized).await;
         let mut buf = [0u8; 128];
         {
@@ -154,7 +136,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
             if let Ok(size) = port_guard.read(&mut buf).await {
                 println!("{}", buf.iter().map(|&b| b as char).collect::<String>());
             } else {
-                #[cfg(feature = "proto")]
                 serial::send_motor_pos(&mut port_guard, 10.0, 20.0, 30.0).await;
                 println!("Sending motor pos");
             }

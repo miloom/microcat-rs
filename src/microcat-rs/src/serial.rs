@@ -79,7 +79,7 @@ pub async fn read_step(
     }
 }
 
-pub async fn send_motor_pos(serial: &mut tokio_serial::SerialStream, target_position: f32, amplitude: f32, frequency: f32) {
+pub async fn send_motor_pos(serial: &mut SerialStream, target_position: f32, amplitude: f32, frequency: f32) {
     let motor = motor::MotorTarget {
         amplitude,
         frequency,
@@ -87,7 +87,7 @@ pub async fn send_motor_pos(serial: &mut tokio_serial::SerialStream, target_posi
     };
     let mut message = message::Message::default();
     message.data = Some(message::message::Data::Motor(motor));
-    let mut buf = bytes::BytesMut::new();
+    let mut buf = BytesMut::new();
     message.encode(&mut buf).unwrap();
     let mut dest = [0u8; 128];
     cobs::encode(buf.iter().as_slice(), &mut dest);

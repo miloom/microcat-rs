@@ -23,6 +23,14 @@ jobs:
         run: echo ${{ secrets.USERPWD }} | sudo -S apt install ros-humble-ros-base ros-dev-tools libclang-dev -y
       - name: Setup for ROS2 Humble
         run: vcs import src < src/ros2_rust/ros2_rust_humble.repos
+        
+      - name: Restore build cache
+        uses: actions/cache@v3
+        with:
+          path: build/
+          key: build-cache-${{ github.ref }}
+          restore-keys: |
+            build-cache-${{ github.ref }}
       - name: Build
         run: source /opt/ros/humble/setup.bash && echo ${AMENT_PREFIX_PATH} && colcon build --packages-up-to microcat_rs --merge-install
 
@@ -34,3 +42,9 @@ jobs:
           name: microcat
           path: microcat.tar.xz
       - run: echo "This job's status is ${{ job.status }}."
+      - name: Save cache
+        if: success()
+        uses: actions/cache@v3
+        with:
+          path: build/
+          key: build-cache-${{ github.ref }}

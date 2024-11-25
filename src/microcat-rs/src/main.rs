@@ -136,7 +136,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 println!("{}", buf.iter().map(|&b| b as char).collect::<String>());
             } else {
                 serial::send_motor_pos(&mut port_guard, 10.0, 20.0, 30.0).await;
-                println!("Sending motor pos");
             }
         }
 

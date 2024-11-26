@@ -9,10 +9,10 @@ struct Motor {
     address: u16,
 }
 impl Motor {
-    const REAR_RIGHT: Self = Self { address: 0x60 };
-    const REAR_LEFT: Self = Self { address: 0x64 };
-    const FRONT_RIGHT: Self = Self { address: 0x61 };
-    const FRONT_LEFT: Self = Self { address: 0x63 };
+    pub const REAR_RIGHT: Self = Self { address: 0x60 };
+    pub const REAR_LEFT: Self = Self { address: 0x64 };
+    pub const FRONT_RIGHT: Self = Self { address: 0x63 };
+    pub const FRONT_LEFT: Self = Self { address: 0x61 };
     const MOTORS: [Self; 4] = [
         Self::FRONT_LEFT,
         Self::REAR_LEFT,

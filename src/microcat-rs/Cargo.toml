@@ -2,6 +2,7 @@
 name = "microcat-rs"
 version = "0.1.0"
 edition = "2021"
+build = "build.rs"
 
 [dependencies]
 bitvec = "1.0.1"
@@ -10,7 +11,8 @@ rppal = { version = "0.18.0", optional = true }
 signal-hook = "0.3.17"
 tokio = { version = "1.38.0", features = ["io-util", "macros", "rt-multi-thread", "signal", "sync", "time"] }
 icm20608g = { git = "https://github.com/miloom/icm20608g.git", features = ["visualize"] }
-drv8830 = { git = "https://github.com/miloom/drv8830.git" }
+#drv8830 = { git = "https://github.com/miloom/drv8830.git" }
+drv8830 = { path = "../../../drv8830"}
 bytes = "1.7.1"
 tokio-serial = "5.4.4"
 cobs = "0.2.3"
@@ -26,8 +28,6 @@ serde = { version = "1.0.210", features = ["derive"] }
 [build-dependencies]
 git2 = "0.19.0"
 prost-build = "0.13.2"
-serde = { version = "1.0.210", features = ["derive"] }
-
 
 [features]
 default = ["proto", "rppal", "ros"]

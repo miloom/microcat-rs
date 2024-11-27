@@ -5,6 +5,11 @@ use std::fs::read_dir;
 use std::path::{Path, PathBuf};
 
 fn main() {
+    println!("cargo:rerun-if-changed=build.rs");
+    println!("cargo:rerun-if-changed=.cache");
+    println!("cargo:rerun-if-changed=src/serial");
+
+    println!("Starting build...");
     let cache_dir = ".cache/microcat-avr";
     let repo_url = "https://github.com/miloom/microcat-avr.git";
     let proto_dir = format!("{}/proto", cache_dir);

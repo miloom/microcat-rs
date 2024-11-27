@@ -14,7 +14,6 @@ mod encoder;
 mod imu;
 #[cfg(feature = "proto")]
 mod motor;
-
 pub async fn read_step(
     // serial: &mut rppal::uart::Uart,
     serial: &mut tokio_serial::SerialStream, 
@@ -83,7 +82,8 @@ pub async fn send_motor_pos(serial: &mut SerialStream, target_position: f32, amp
     let motor = motor::MotorTarget {
         amplitude,
         frequency,
-        target_position
+        target_position,
+        location: motor::Location::FrontRight.into(),
     };
     let mut message = message::Message::default();
     message.data = Some(message::message::Data::Motor(motor));
@@ -92,5 +92,5 @@ pub async fn send_motor_pos(serial: &mut SerialStream, target_position: f32, amp
     let mut dest = [0u8; 128];
     let len = cobs::encode(buf.iter().as_slice(), &mut dest);
     dest[len] = 0;
-    serial.write(&dest[..=len]).await.unwrap();
+    let _ = serial.write(&dest[..=len]).await.unwrap();
 }

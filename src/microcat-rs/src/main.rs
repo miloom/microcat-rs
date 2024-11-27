@@ -4,14 +4,12 @@ use rppal::gpio::Gpio;
 use rppal::i2c::I2c;
 use std::error::Error;
 use std::sync::Arc;
-use std::thread;
 use std::time::Duration;
 #[cfg(feature = "ros")]
 use std_msgs::msg::String as StringMsg;
 use tokio::io::AsyncReadExt;
-use tokio::signal;
 use tokio::sync::Mutex;
-use tokio_serial::{DataBits, FlowControl, Parity, SerialPortBuilderExt, SerialStream, StopBits};
+use tokio_serial::{DataBits, FlowControl, Parity, SerialPortBuilderExt, StopBits};
 
 #[allow(dead_code)]
 mod consts;
@@ -104,23 +102,28 @@ async fn main() -> Result<(), Box<dyn Error>> {
         rgb::test_leds(&mut rgb).await.unwrap();
     });*/
 
+    #[cfg(feature = "rppal")]
+    let gpio = Gpio::new()?;
+    #[cfg(feature = "rppal")]
+    let mut pin = gpio.get(19)?.into_output();
+    #[cfg(feature = "rppal")]
+    pin.set_low();
+    #[cfg(feature = "rppal")]
+    let mut new_pin = gpio.get(26)?.into_output();
+    #[cfg(feature = "rppal")]
+    new_pin.set_low();
+    #[cfg(feature = "rppal")]
+    println!("{}, {}", pin.is_set_low(), new_pin.is_set_low());
 
-        let gpio = Gpio::new()?;
-        let mut pin = gpio.get(19)?.into_output();
-        pin.set_low();
-        let mut new_pin = gpio.get(26)?.into_output();
-        new_pin.set_low();
-        println!("{}, {}", pin.is_set_low(), new_pin.is_set_low());
+    // let i2c = I2c::new()?;
+    // println!("I2c: {:?}", i2c.capabilities());
 
-        // let i2c = I2c::new()?;
-        // println!("I2c: {:?}", i2c.capabilities());
+    println!("Motors test");
+    // let i2c = Arc::from(std::sync::Mutex::from(i2c));
+    // motors::test(i2c.clone()).await?;
 
-        println!("Motors test");
-        // let i2c = Arc::from(std::sync::Mutex::from(i2c));
-        // motors::test(i2c.clone()).await?;
-
-        println!("IMU");
-        // imu::setup(&mut i2c.lock().unwrap())?;
+    println!("IMU");
+    // imu::setup(&mut i2c.lock().unwrap())?;
 
     let mut message_buffer = bytes::BytesMut::with_capacity(1024);
     let mut initialized = false;

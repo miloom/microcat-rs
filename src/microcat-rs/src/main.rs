@@ -1,13 +1,12 @@
+#![allow(dead_code)]
+#![allow(unused_variables)]
 #[cfg(feature = "rppal")]
 use rppal::gpio::Gpio;
-#[cfg(feature = "rppal")]
-use rppal::i2c::I2c;
 use std::error::Error;
 use std::sync::Arc;
 use std::time::Duration;
 #[cfg(feature = "ros")]
 use std_msgs::msg::String as StringMsg;
-use tokio::io::AsyncReadExt;
 use tokio::sync::Mutex;
 use tokio_serial::{DataBits, FlowControl, Parity, SerialPortBuilderExt, StopBits};
 
@@ -85,7 +84,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         }
     });
     #[cfg(feature = "proto")]
-    let mut serial = Arc::new(Mutex::new({
+    let serial = Arc::new(Mutex::new({
         println!("Using Proto");
         tokio_serial::new("/dev/ttyS0", 115_200)
             .timeout(std::time::Duration::from_secs(2))
@@ -125,8 +124,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
     println!("IMU");
     // imu::setup(&mut i2c.lock().unwrap())?;
 
-    let mut message_buffer = bytes::BytesMut::with_capacity(1024);
-    let mut initialized = false;
+    let message_buffer = bytes::BytesMut::with_capacity(1024);
+    let initialized = false;
 
     for _ in 0..100_000 {
         // let accel = imu::get_accel(&mut i2c.lock().unwrap())?;

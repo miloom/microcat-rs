@@ -29,7 +29,7 @@ fn main() {
             .refname_to_id("refs/remotes/origin/master")
             .expect("Failed to find ref");
         let commit = repo.find_commit(obj).expect("Failed to find commit");
-        repo.reset(&commit.as_object(), git2::ResetType::Hard, None)
+        repo.reset(commit.as_object(), git2::ResetType::Hard, None)
             .expect("Failed to reset repository");
     } else {
         println!("Cloning the repository...");
@@ -40,7 +40,7 @@ fn main() {
     fs::create_dir_all("src/serial").expect("Failed to create src/serial directory");
 
     // Gather all the .proto files
-    let proto_files = find_proto_files(&Path::new(&proto_dir));
+    let proto_files = find_proto_files(Path::new(&proto_dir));
 
     // Compile the protobuf files
     let mut config = Config::new();

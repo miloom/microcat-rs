@@ -27,7 +27,7 @@ pub async fn read_step(
             println!("No data read, returning");
         }
         Ok(n) => {
-            let bytes: BytesMut = buf[0..n].into_iter().collect::<BytesMut>().freeze().into();
+            let bytes: BytesMut = buf[0..n].iter().collect::<BytesMut>().freeze().into();
             if *initialized {
                 message_buffer.extend(bytes);
             } else if let Some(start) = bytes.iter().rposition(|&v| v == 0) {

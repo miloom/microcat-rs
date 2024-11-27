@@ -11,8 +11,7 @@ rppal = { version = "0.18.0", optional = true }
 signal-hook = "0.3.17"
 tokio = { version = "1.38.0", features = ["io-util", "macros", "rt-multi-thread", "signal", "sync", "time"] }
 icm20608g = { git = "https://github.com/miloom/icm20608g.git", features = ["visualize"] }
-#drv8830 = { git = "https://github.com/miloom/drv8830.git" }
-drv8830 = { path = "../../../drv8830"}
+drv8830 = { git = "https://github.com/miloom/drv8830.git" }
 bytes = "1.7.1"
 tokio-serial = "5.4.4"
 cobs = "0.2.3"

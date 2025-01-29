@@ -9,7 +9,7 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 #[allow(clippy::all, clippy::nursery, clippy::pedantic)]
 mod message;
 #[cfg(feature = "proto")]
-mod encoder;
+mod tone_detector;
 #[cfg(feature = "proto")]
 mod imu;
 #[cfg(feature = "proto")]
@@ -56,16 +56,13 @@ pub async fn read_step(
 
                     #[cfg(feature = "proto")]
                     match msg.data.unwrap() {
-                        message::message::Data::Encoder(msg) => {
-                            if msg.position == encoder::Location::FrontRight.into() {
-                                println!("{}", msg.position);
-                            }
-                        },
-                        message::message::Data::Telemetry(msg) => {
+                        message::message::Data::Imu(msg) => {
                         }
-                        message::message::Data::Motor(msg) => {
+                        message::message::Data::MotorTarget(msg) => {
 
                         }
+                        message::message::Data::MotorPosition(msg) => {}
+                        message::message::Data::ToneDetectorStatus(msg) => {}
                     }
                 } else {
                     eprintln!("Failed to decode");
@@ -78,15 +75,15 @@ pub async fn read_step(
     }
 }
 
-pub async fn send_motor_pos(serial: &mut SerialStream, target_position: f32, amplitude: f32, frequency: f32) {
+pub async fn send_motor_pos(serial: &mut SerialStream, target_position: i32, amplitude: u32, frequency: f32) {
     let motor = motor::MotorTarget {
         amplitude,
-        frequency,
+        frequency: (frequency * 1000.0) as u32,
         target_position,
         location: motor::Location::FrontRight.into(),
     };
     let mut message = message::Message::default();
-    message.data = Some(message::message::Data::Motor(motor));
+    message.data = Some(message::message::Data::MotorTarget(motor));
     let mut buf = BytesMut::new();
     message.encode(&mut buf).unwrap();
     let mut dest = [0u8; 128];

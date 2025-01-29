@@ -1,7 +1,7 @@
-use git2::Repository;
+use git2::{Cred, RemoteCallbacks, Repository};
 use prost_build::Config;
-use std::fs;
-use std::fs::read_dir;
+use std::{env, fs};
+use std::fs::{read_dir, remove_dir_all};
 use std::path::{Path, PathBuf};
 
 fn main() {
@@ -10,31 +10,35 @@ fn main() {
     println!("cargo:rerun-if-changed=src/serial");
 
     println!("Starting build...");
-    let cache_dir = ".cache/microcat-avr";
-    let repo_url = "https://github.com/miloom/microcat-avr.git";
+    let cache_dir = ".cache/microcat-avr-rs";
+    let repo_url = "git@github.com:miloom/microcat-avr-rs.git";
     let proto_dir = format!("{}/proto", cache_dir);
 
     // Ensure the cache directory exists
     fs::create_dir_all(cache_dir).expect("Failed to create cache directory");
 
-    // Clone or update the Git repository
-    if Path::new(&(cache_dir.to_owned() + "/.git")).exists() {
-        println!("Resetting the existing repository...");
-        let repo = Repository::open(cache_dir).expect("Failed to open repository");
-        let mut remote = repo.find_remote("origin").expect("Remote 'origin' not found");
-        remote
-            .fetch(&["refs/heads/master:refs/remotes/origin/master"], None, None)
-            .expect("Failed to fetch updates");
-        let obj = repo
-            .refname_to_id("refs/remotes/origin/master")
-            .expect("Failed to find ref");
-        let commit = repo.find_commit(obj).expect("Failed to find commit");
-        repo.reset(commit.as_object(), git2::ResetType::Hard, None)
-            .expect("Failed to reset repository");
-    } else {
-        println!("Cloning the repository...");
-        Repository::clone(repo_url, cache_dir).expect("Failed to clone repository");
-    }
+    remove_dir_all(Path::new(cache_dir)).unwrap();
+
+    let mut callbacks = RemoteCallbacks::new();
+    callbacks.credentials(|_url, username_from_url, _allowed_types| {
+        Cred::ssh_key(
+            username_from_url.unwrap(),
+            None,
+            Path::new(&format!("{}/.ssh/id_ed25519", env::var("HOME").unwrap())),
+            None,
+        )
+    });
+
+    let mut fo = git2::FetchOptions::new();
+    fo.remote_callbacks(callbacks);
+
+    let mut builder = git2::build::RepoBuilder::new();
+    builder.fetch_options(fo);
+
+    builder.clone(
+        repo_url,
+        Path::new(cache_dir),
+    ).expect("Failed to clone repository");
 
     // Ensure the protobuf output directory exists
     fs::create_dir_all("src/serial").expect("Failed to create src/serial directory");
@@ -44,10 +48,10 @@ fn main() {
 
     // Compile the protobuf files
     let mut config = Config::new();
-    config.type_attribute(".", "#[derive(serde::Serialize, serde::Deserialize)]"); // Optional: Add Serde attributes if needed
+    config.type_attribute(".", "#[derive(serde::Serialize, serde::Deserialize)]");
     config.compile_well_known_types();
     config.out_dir("src/serial");
-
+    println!("{proto_files:?}");
     config
         .compile_protos(&proto_files, &[proto_dir.clone()])
         .expect("Failed to compile protobuf files");

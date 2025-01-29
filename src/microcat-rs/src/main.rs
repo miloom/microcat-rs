@@ -137,7 +137,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
             if let Ok(size) = port_guard.try_read(&mut buf) {
                 println!("{}", buf.iter().map(|&b| b as char).collect::<String>());
             } else {
-                serial::send_motor_pos(&mut port_guard, 10.0, 20.0, 30.0).await;
+                serial::send_motor_pos(&mut port_guard, 10, 20, 30.0).await;
             }
         }
 

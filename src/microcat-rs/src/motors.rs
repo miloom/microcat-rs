@@ -6,7 +6,7 @@ use std::thread;
 use std::time::Duration;
 
 struct Motor {
-    address: u16,
+    address: u8,
 }
 impl Motor {
     pub const REAR_RIGHT: Self = Self { address: 0x60 };
@@ -21,13 +21,11 @@ impl Motor {
     ];
 
     fn write<T: WriteRegister>(&self, data: &T, i2c: &mut I2c) -> Result<(), Box<dyn Error>> {
-        i2c.set_slave_address(self.address)?;
-        data.write(i2c)?;
+        data.write(i2c, self.address)?;
         Ok(())
     }
     fn read<T: ReadRegister>(&self, i2c: &mut I2c) -> Result<T, Box<dyn Error>> {
-        i2c.set_slave_address(self.address)?;
-        Ok(T::new(i2c)?)
+        Ok(T::new(i2c, self.address)?)
     }
 }
 

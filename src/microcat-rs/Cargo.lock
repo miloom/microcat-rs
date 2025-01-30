@@ -797,6 +797,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "libudev"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "78b324152da65df7bb95acfcaab55e3097ceaab02fb19b228a9eb74d55f135e0"
+dependencies = [
+ "libc",
+ "libudev-sys",
+]
+
+[[package]]
+name = "libudev-sys"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3c8469b4a23b962c1396b9b451dda50ef5b283e8dd309d69033475fa9b334324"
+dependencies = [
+ "libc",
+ "pkg-config",
+]
+
+[[package]]
 name = "libz-sys"
 version = "1.1.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -853,16 +873,29 @@ dependencies = [
  "drv8830",
  "git2",
  "icm20608g",
+ "microcat_msgs",
  "prost",
  "prost-build",
  "prost-types",
  "rclrs",
+ "rosidl_runtime_rs",
  "rppal",
  "serde",
+ "serde_json",
+ "serialport",
  "signal-hook",
  "std_msgs",
  "tokio",
  "tokio-serial",
+]
+
+[[package]]
+name = "microcat_msgs"
+version = "0.1.0"
+dependencies = [
+ "rosidl_runtime_rs",
+ "serde",
+ "serde-big-array",
 ]
 
 [[package]]
@@ -1147,6 +1180,7 @@ name = "rosidl_runtime_rs"
 version = "0.4.1"
 dependencies = [
  "cfg-if",
+ "serde",
 ]
 
 [[package]]
@@ -1207,6 +1241,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "serde-big-array"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "11fc7cc2c76d73e0f27ee52abbd64eec84d46f370c88371120433196934e4b7f"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "serde_derive"
 version = "1.0.217"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1215,6 +1258,18 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.96",
+]
+
+[[package]]
+name = "serde_json"
+version = "1.0.138"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d434192e7da787e94a6ea7e9670b26a036d0ca41e0b7efb2676dd32bae872949"
+dependencies = [
+ "itoa",
+ "memchr",
+ "ryu",
+ "serde",
 ]
 
 [[package]]
@@ -1228,6 +1283,7 @@ dependencies = [
  "core-foundation",
  "core-foundation-sys",
  "io-kit-sys",
+ "libudev",
  "mach2",
  "nix 0.26.4",
  "scopeguard",

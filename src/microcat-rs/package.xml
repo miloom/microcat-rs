@@ -7,6 +7,8 @@
 
     <depend>rclrs</depend>
     <depend>std_msgs</depend>
+    <depend>rosidl_runtime_rs</depend>
+    <depend>microcat_msgs</depend>
 
     <export>
         <build_type>ament_cargo</build_type>

@@ -1,8 +1,7 @@
 #![allow(unused_imports)]
 use bytes::BytesMut;
 use prost::Message;
-use tokio_serial::SerialStream;
-use anyhow::anyhow;
+use serialport::SerialPort;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 #[cfg(feature = "proto")]
@@ -75,19 +74,56 @@ pub async fn read_step(
     }
 }
 
-pub async fn send_motor_pos(serial: &mut SerialStream, target_position: i32, amplitude: u32, frequency: f32) {
-    let motor = motor::MotorTarget {
-        amplitude,
-        frequency: (frequency * 1000.0) as u32,
-        target_position,
-        location: motor::Location::FrontRight.into(),
+pub enum MotorLocation {
+    FrontLeft,
+    FrontRight,
+    RearLeft,
+    RearRight,
+}
+
+pub struct MotorPos {
+    pub location: MotorLocation,
+    pub amplitude: u32,
+    pub target_position: i32,
+    pub frequency: f32,
+}
+
+pub enum Command {
+    MotorPosition(MotorPos),
+}
+
+pub fn write(serial: &mut Box<dyn SerialPort>, command: Command) {
+    let message = match command {
+        Command::MotorPosition(pos) => {
+            let data = motor::MotorTarget {
+                target_position: pos.target_position,
+                amplitude: pos.amplitude,
+                frequency: (pos.frequency * 1000.0) as u32,
+                location: match pos.location {
+                    MotorLocation::FrontLeft => {
+                        motor::Location::FrontLeft.into()
+                    }
+                    MotorLocation::FrontRight => {
+                        motor::Location::FrontRight.into()
+                    }
+                    MotorLocation::RearRight => {
+                        motor::Location::BackRight.into()
+                    }
+                    MotorLocation::RearLeft => {
+                        motor::Location::BackLeft.into()
+                    }
+                },
+            };
+            message::Message {
+                data: Some(message::message::Data::MotorTarget(data)),
+            }
+        }
     };
-    let mut message = message::Message::default();
-    message.data = Some(message::message::Data::MotorTarget(motor));
+
     let mut buf = BytesMut::new();
     message.encode(&mut buf).unwrap();
     let mut dest = [0u8; 128];
     let len = cobs::encode(buf.iter().as_slice(), &mut dest);
     dest[len] = 0;
-    let _ = serial.write(&dest[..=len]).await.unwrap();
+    let _ = serial.write(&dest[..=len]);
 }

@@ -1,8 +1,10 @@
 #![allow(unused_imports)]
+use crate::Telemetry;
 use bytes::BytesMut;
 use prost::Message;
 use serialport::SerialPort;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::sync::mpsc::Sender;
 
 #[cfg(feature = "proto")]
 #[allow(clippy::all, clippy::nursery, clippy::pedantic)]
@@ -13,15 +15,16 @@ mod tone_detector;
 mod imu;
 #[cfg(feature = "proto")]
 mod motor;
-pub async fn read_step(
+pub async fn read(
     // serial: &mut rppal::uart::Uart,
-    serial: &mut tokio_serial::SerialStream, 
-    message_buffer: &mut bytes::BytesMut,
+    serial: &mut Box<dyn SerialPort>,
+    message_buffer: &mut BytesMut,
     initialized: &mut bool,
+    tx: &mut Sender<crate::Telemetry>
 ) {
     // let mut buf = bytes::BytesMut::with_capacity(1024);
     let mut buf: [u8; 100] = [0; 100];
-    match serial.read(&mut buf).await {
+    match serial.read(&mut buf) {
         Ok(0) => {
             println!("No data read, returning");
         }
@@ -56,12 +59,62 @@ pub async fn read_step(
                     #[cfg(feature = "proto")]
                     match msg.data.unwrap() {
                         message::message::Data::Imu(msg) => {
+                            if let Some(gyro) = msg.gyro {
+                                if let Some(accel) = msg.accel {
+                                    tx.send(Telemetry::Imu(microcat_msgs::msg::Imu {
+                                        gyro_x: gyro.x as f32 / 1000.0,
+                                        gyro_y: gyro.y as f32 / 1000.0,
+                                        gyro_z: gyro.z as f32 / 1000.0,
+                                        accel_x: accel.x,
+                                        accel_y: accel.y,
+                                        accel_z: accel.z,
+                                    })).await.unwrap();
+                                }
+                            }
                         }
                         message::message::Data::MotorTarget(msg) => {
 
                         }
-                        message::message::Data::MotorPosition(msg) => {}
-                        message::message::Data::ToneDetectorStatus(msg) => {}
+                        message::message::Data::MotorPosition(msg) => {
+                            tx.send(Telemetry::MotorPosition(microcat_msgs::msg::MotorStatus {
+                                location: if let Ok(loc) = motor::Location::try_from(msg.location) {
+                                    match loc {
+                                        motor::Location::FrontLeft => {
+                                            microcat_msgs::msg::MotorStatus::FRONT_LEFT
+                                        }
+                                        motor::Location::FrontRight => {
+                                            microcat_msgs::msg::MotorStatus::FRONT_RIGHT
+                                        }
+                                        motor::Location::BackLeft => {
+                                            microcat_msgs::msg::MotorStatus::REAR_LEFT
+                                        }
+                                        motor::Location::BackRight => {
+                                            microcat_msgs::msg::MotorStatus::REAR_RIGHT
+                                        }
+                                    }
+                                } else {
+                                    255
+                                },
+                                position: msg.position,
+                            })).await.unwrap();
+                        }
+                        message::message::Data::ToneDetectorStatus(msg) => {
+                            tx.send(Telemetry::ToneDetector(microcat_msgs::msg::ToneDetector {
+                                location: if let Ok(loc) = tone_detector::Location::try_from(msg.location) {
+                                    match loc {
+                                        tone_detector::Location::Left => {
+                                            microcat_msgs::msg::ToneDetector::LEFT
+                                        }
+                                        tone_detector::Location::Right => {
+                                            microcat_msgs::msg::ToneDetector::RIGHT
+                                        }
+                                    }
+                                } else {
+                                    255
+                                },
+                                is_active: msg.is_high
+                            })).await.unwrap();
+                        }
                     }
                 } else {
                     eprintln!("Failed to decode");

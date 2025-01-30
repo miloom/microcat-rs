@@ -14,6 +14,9 @@ find_package(rosidl_default_generators REQUIRED)
 
 set(msg_files
   "msg/MotorControl.msg"
+  "msg/Imu.msg"
+  "msg/MotorStatus.msg"
+  "msg/ToneDetector.msg"
 )
 
 rosidl_generate_interfaces(${PROJECT_NAME}

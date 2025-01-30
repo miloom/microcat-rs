@@ -7,9 +7,11 @@ use serialport::{DataBits, FlowControl, Parity, SerialPort, StopBits};
 use std::error::Error;
 use std::sync::Arc;
 use std::time::Duration;
+use bytes::BytesMut;
 #[cfg(feature = "ros")]
 use std_msgs::msg::String as StringMsg;
-use tokio::sync::Mutex;
+use tokio::sync::{mpsc, Mutex};
+use tokio::sync::mpsc::Receiver;
 
 #[allow(dead_code)]
 mod consts;
@@ -28,18 +30,20 @@ mod serial;
 struct MicrocatNode {
     node: Arc<rclrs::Node>,
     motor_control_subscription: Arc<rclrs::Subscription<microcat_msgs::msg::MotorControl>>,
-    publisher: Arc<rclrs::Publisher<StringMsg>>,
+    motor_status_publisher: Arc<rclrs::Publisher<microcat_msgs::msg::MotorStatus>>,
+    imu_publisher: Arc<rclrs::Publisher<microcat_msgs::msg::Imu>>,
+    tone_detector_publisher: Arc<rclrs::Publisher<microcat_msgs::msg::ToneDetector>>,
     data: Arc<std::sync::Mutex<Option<StringMsg>>>,
+    rx: Receiver<Telemetry>,
 }
 
 #[cfg(feature = "ros")]
 impl MicrocatNode {
-    fn new(context: &rclrs::Context, serial_stream: Arc<Mutex<Box<dyn SerialPort>>>) -> Result<Self, rclrs::RclrsError> {
+    fn new(context: &rclrs::Context, serial_stream: Arc<Mutex<Box<dyn SerialPort>>>, rx: Receiver<Telemetry>) -> Result<Self, rclrs::RclrsError> {
         let node = rclrs::Node::new(context, "microcat_node")?;
         let data = Arc::new(std::sync::Mutex::new(None));
         let data_cb = Arc::clone(&data);
 
-        let publisher = node.create_publisher("out_topic", rclrs::QOS_PROFILE_DEFAULT)?;
         let serial_stream_cb = Arc::clone(&serial_stream);
         let motor_control_subscription = {
             node.create_subscription(
@@ -69,25 +73,46 @@ impl MicrocatNode {
                         frequency: msg.frequency,
                         amplitude: msg.amplitude,
                     });
-                    let mut guard = tokio::runtime::Runtime::new().unwrap().block_on(serial_stream_cb.lock());
+                    let mut guard = serial_stream_cb.blocking_lock();
                     serial::write(&mut *guard, command);
                 },
             )?
         };
+        let motor_status_publisher = node.create_publisher("motor_status", rclrs::QOS_PROFILE_DEFAULT)?;
+        let imu_publisher = node.create_publisher("imu", rclrs::QOS_PROFILE_DEFAULT)?;
+        let tone_detector_publisher = node.create_publisher("tone_detector", rclrs::QOS_PROFILE_DEFAULT)?;
         Ok(Self {
             node,
             motor_control_subscription,
-            publisher,
             data,
+            rx,
+            motor_status_publisher,
+            imu_publisher,
+            tone_detector_publisher,
         })
     }
 
-    fn republish(&self) -> Result<(), rclrs::RclrsError> {
-        if let Some(s) = &*self.data.lock().unwrap() {
-            self.publisher.publish(s)?;
+    async fn write(&mut self) {
+        while let Some(msg) = self.rx.recv().await {
+            match msg {
+                Telemetry::MotorPosition(position) => {
+                    self.motor_status_publisher.publish(position).unwrap()
+                }
+                Telemetry::Imu(imu) => {
+                    self.imu_publisher.publish(imu).unwrap()
+                }
+                Telemetry::ToneDetector(tone_detector) => {
+                    self.tone_detector_publisher.publish(tone_detector).unwrap()
+                }
+            }
         }
-        Ok(())
     }
+}
+
+enum Telemetry {
+    MotorPosition(microcat_msgs::msg::MotorStatus),
+    Imu(microcat_msgs::msg::Imu),
+    ToneDetector(microcat_msgs::msg::ToneDetector),
 }
 
 
@@ -100,20 +125,18 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .parity(Parity::None)
         .stop_bits(StopBits::One)
         .open().unwrap()));
-
+    let (mut tx, rx) = mpsc::channel::<Telemetry>(10);
+    
     #[cfg(feature = "ros")]
     let context = rclrs::Context::new(std::env::args())?;
     #[cfg(feature = "ros")]
-    let microcat_node = Arc::new(MicrocatNode::new(&context, Arc::clone(&serial))?);
+    let microcat_node = Arc::new(Mutex::new(MicrocatNode::new(&context, Arc::clone(&serial), rx)?));
     #[cfg(feature = "ros")]
     let microcat_other_thread = Arc::clone(&microcat_node);
     #[cfg(feature = "ros")]
-    std::thread::spawn(move || -> Result<(), rclrs::RclrsError> {
-        loop {
-            use std::time::Duration;
-            std::thread::sleep(Duration::from_millis(1000));
-            microcat_other_thread.republish()?;
-        }
+    tokio::spawn(async move {
+       tokio::time::sleep(Duration::from_millis(10)).await;
+        microcat_other_thread.lock().await.write().await;
     });
 
     /*
@@ -145,21 +168,19 @@ async fn main() -> Result<(), Box<dyn Error>> {
     // imu::setup(&mut i2c.lock().unwrap())?;
 
     let message_buffer = bytes::BytesMut::with_capacity(1024);
-    let initialized = false;
+    let mut initialized = false;
 
     for _ in 0..100_000 {
-        let mut buf = [0u8; 128];
+        let mut buf =  BytesMut::default();
         {
             let mut port_guard = serial.lock().await;
-            if let Ok(size) = port_guard.read(&mut buf) {
-                println!("{}", buf.iter().map(|&b| b as char).collect::<String>());
-            }
+            serial::read(&mut *port_guard, &mut buf, &mut initialized,&mut tx).await;
         }
 
         tokio::time::sleep(Duration::from_millis(10)).await;
     }
 
     #[cfg(feature = "ros")]
-    rclrs::spin(Arc::clone(&microcat_node.node))?;
+    rclrs::spin(Arc::clone(&microcat_node.blocking_lock().node))?;
     Ok(())
 }

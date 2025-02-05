@@ -17,6 +17,7 @@ set(msg_files
   "msg/Imu.msg"
   "msg/MotorStatus.msg"
   "msg/ToneDetector.msg"
+  "msg/PressureData.msg"
 )
 
 rosidl_generate_interfaces(${PROJECT_NAME}

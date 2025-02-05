@@ -15,6 +15,8 @@ mod tone_detector;
 mod imu;
 #[cfg(feature = "proto")]
 mod motor;
+#[cfg(feature = "proto")]
+mod pressure;
 pub async fn read(
     // serial: &mut rppal::uart::Uart,
     serial: &mut Box<dyn SerialPort>,
@@ -113,6 +115,12 @@ pub async fn read(
                                     255
                                 },
                                 is_active: msg.is_high
+                            })).await.unwrap();
+                        }
+                        message::message::Data::PressureData(msg) => {
+                            tx.send(Telemetry::PressureData(microcat_msgs::msg::PressureData {
+                                pressure: msg.pressure as f32 / 100.0,
+                                temperature: msg.temperature as f32 / 100.0,
                             })).await.unwrap();
                         }
                     }

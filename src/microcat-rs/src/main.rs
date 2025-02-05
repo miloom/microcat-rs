@@ -12,6 +12,7 @@ use bytes::BytesMut;
 use std_msgs::msg::String as StringMsg;
 use tokio::sync::{mpsc, Mutex};
 use tokio::sync::mpsc::Receiver;
+use crate::consts::MAIN_LOOP_TIME_PERIOD_MS;
 
 #[allow(dead_code)]
 mod consts;
@@ -33,6 +34,7 @@ struct MicrocatNode {
     motor_status_publisher: Arc<rclrs::Publisher<microcat_msgs::msg::MotorStatus>>,
     imu_publisher: Arc<rclrs::Publisher<microcat_msgs::msg::Imu>>,
     tone_detector_publisher: Arc<rclrs::Publisher<microcat_msgs::msg::ToneDetector>>,
+    pressure_data_publisher: Arc<rclrs::Publisher<microcat_msgs::msg::PressureData>>,
     data: Arc<std::sync::Mutex<Option<StringMsg>>>,
     rx: Receiver<Telemetry>,
 }
@@ -81,6 +83,7 @@ impl MicrocatNode {
         let motor_status_publisher = node.create_publisher("motor_status", rclrs::QOS_PROFILE_DEFAULT)?;
         let imu_publisher = node.create_publisher("imu", rclrs::QOS_PROFILE_DEFAULT)?;
         let tone_detector_publisher = node.create_publisher("tone_detector", rclrs::QOS_PROFILE_DEFAULT)?;
+        let pressure_data_publisher = node.create_publisher("pressure_data", rclrs::QOS_PROFILE_DEFAULT)?;
         Ok(Self {
             node,
             motor_control_subscription,
@@ -89,6 +92,7 @@ impl MicrocatNode {
             motor_status_publisher,
             imu_publisher,
             tone_detector_publisher,
+            pressure_data_publisher,
         })
     }
 
@@ -104,6 +108,9 @@ impl MicrocatNode {
                 Telemetry::ToneDetector(tone_detector) => {
                     self.tone_detector_publisher.publish(tone_detector).unwrap()
                 }
+                Telemetry::PressureData(pressure_data) => {
+                    self.pressure_data_publisher.publish(pressure_data).unwrap()
+                }
             }
         }
     }
@@ -113,6 +120,7 @@ enum Telemetry {
     MotorPosition(microcat_msgs::msg::MotorStatus),
     Imu(microcat_msgs::msg::Imu),
     ToneDetector(microcat_msgs::msg::ToneDetector),
+    PressureData(microcat_msgs::msg::PressureData),
 }
 
 
@@ -148,6 +156,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     #[cfg(feature = "rppal")]
     let gpio = Gpio::new()?;
+    // Setting pins 19 and 26 will configure the MUX to connect arduino to rpi
     #[cfg(feature = "rppal")]
     let mut pin = gpio.get(19)?.into_output();
     #[cfg(feature = "rppal")]
@@ -159,25 +168,20 @@ async fn main() -> Result<(), Box<dyn Error>> {
     #[cfg(feature = "rppal")]
     println!("{}, {}", pin.is_set_low(), new_pin.is_set_low());
 
-    // let i2c = I2c::new()?;
-    // println!("I2c: {:?}", i2c.capabilities());
-
-    // let i2c = Arc::from(std::sync::Mutex::from(i2c));
-    // motors::test(i2c.clone()).await?;
-
-    // imu::setup(&mut i2c.lock().unwrap())?;
-
     let message_buffer = bytes::BytesMut::with_capacity(1024);
     let mut initialized = false;
 
-    for _ in 0..100_000 {
-        let mut buf =  BytesMut::default();
+    let mut next_loop_exec = tokio::time::Instant::now().checked_add(Duration::from_millis(MAIN_LOOP_TIME_PERIOD_MS as u64)).unwrap();
+    let mut serial_buf =  BytesMut::default();
+
+    loop {
+        while tokio::time::Instant::now() < next_loop_exec {}
         {
             let mut port_guard = serial.lock().await;
-            serial::read(&mut *port_guard, &mut buf, &mut initialized,&mut tx).await;
+            serial::read(&mut *port_guard, &mut serial_buf, &mut initialized,&mut tx).await;
         }
 
-        tokio::time::sleep(Duration::from_millis(10)).await;
+        next_loop_exec.checked_add(Duration::from_millis(MAIN_LOOP_TIME_PERIOD_MS as u64)).unwrap();
     }
 
     #[cfg(feature = "ros")]

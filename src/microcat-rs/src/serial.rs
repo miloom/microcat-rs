@@ -6,16 +6,11 @@ use serialport::SerialPort;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::sync::mpsc::Sender;
 
-#[cfg(feature = "proto")]
 mod imu;
-#[cfg(feature = "proto")]
 #[allow(clippy::all, clippy::nursery, clippy::pedantic)]
 mod message;
-#[cfg(feature = "proto")]
 mod motor;
-#[cfg(feature = "proto")]
 mod pressure;
-#[cfg(feature = "proto")]
 mod tone_detector;
 pub async fn read(
     // serial: &mut rppal::uart::Uart,
@@ -52,14 +47,10 @@ pub async fn read(
                 #[allow(unused_variables)]
                 let message = &dest[..len];
 
-                #[cfg(feature = "proto")]
                 let decoded = message::Message::decode(message).inspect_err(|e| println!("{e}"));
-                #[cfg(not(feature = "proto"))]
-                let decoded: Result<(), anyhow::Error> = Ok(());
 
                 #[allow(unused_variables)]
                 if let Ok(msg) = decoded {
-                    #[cfg(feature = "proto")]
                     match msg.data {
                         Some(message::message::Data::Imu(msg)) => {
                             if let Some(gyro) = msg.gyro {

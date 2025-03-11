@@ -4,31 +4,24 @@ use crate::consts::MAIN_LOOP_TIME_PERIOD_MS;
 use crate::serial::MotorPos;
 use bytes::BytesMut;
 use rclrs::CreateBasicExecutor;
-#[cfg(feature = "rppal")]
 use rppal::gpio::Gpio;
 use serialport::{DataBits, FlowControl, Parity, SerialPort, StopBits};
 use std::error::Error;
 use std::sync::Arc;
 use std::time::Duration;
-#[cfg(feature = "ros")]
 use std_msgs::msg::String as StringMsg;
 use tokio::sync::mpsc::Receiver;
 use tokio::sync::{mpsc, Mutex};
 
 #[allow(dead_code)]
 mod consts;
-#[cfg(feature = "rppal")]
 mod imu;
 // #[allow(dead_code), cfg(feature = "rppal")]
-#[cfg(feature = "rppal")]
 mod motors;
 // #[allow(dead_code), cfg(feature="rppal")]
-#[cfg(feature = "rppal")]
 mod rgb;
-#[cfg(feature = "proto")]
 mod serial;
 
-#[cfg(feature = "ros")]
 struct MicrocatNode {
     node: Arc<rclrs::Node>,
     motor_control_subscription: Arc<rclrs::Subscription<microcat_msgs::msg::MotorControl>>,
@@ -40,7 +33,6 @@ struct MicrocatNode {
     rx: Receiver<Telemetry>,
 }
 
-#[cfg(feature = "ros")]
 impl MicrocatNode {
     fn new(
         executor: &rclrs::Executor,
@@ -143,18 +135,14 @@ async fn main() -> Result<(), Box<dyn Error>> {
     ));
     let (mut tx, rx) = mpsc::channel::<Telemetry>(10);
 
-    #[cfg(feature = "ros")]
     let context = rclrs::Context::default_from_env()?;
     let executor = context.create_basic_executor();
-    #[cfg(feature = "ros")]
     let microcat_node = Arc::new(Mutex::new(MicrocatNode::new(
         &executor,
         Arc::clone(&serial),
         rx,
     )?));
-    #[cfg(feature = "ros")]
     let microcat_other_thread = Arc::clone(&microcat_node);
-    #[cfg(feature = "ros")]
     tokio::spawn(async move {
         tokio::time::sleep(Duration::from_millis(10)).await;
         microcat_other_thread.lock().await.write().await;
@@ -167,16 +155,11 @@ async fn main() -> Result<(), Box<dyn Error>> {
         rgb::test_leds(&mut rgb).await.unwrap();
     });*/
 
-    #[cfg(feature = "rppal")]
     let gpio = Gpio::new()?;
     // Setting pins 19 and 26 will configure the MUX to connect arduino to rpi
-    #[cfg(feature = "rppal")]
     let mut pin = gpio.get(19)?.into_output();
-    #[cfg(feature = "rppal")]
     pin.set_low();
-    #[cfg(feature = "rppal")]
     let mut new_pin = gpio.get(26)?.into_output();
-    #[cfg(feature = "rppal")]
     new_pin.set_low();
     println!("{}, {}", pin.is_set_low(), new_pin.is_set_low());
 

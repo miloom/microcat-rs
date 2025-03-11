@@ -1,9 +1,11 @@
 name: Build code
 run-name: ${{ github.actor }} is building
-on: [push]
+on: [ push ]
 jobs:
   Build-code:
-    runs-on: [self-hosted, linux, arm64]
+    runs-on: [ self-hosted, linux, arm64 ]
+    env:
+      CARGO_TERM_COLOR: always
     steps:
       - run: echo "The job was automatically triggered by a ${{ github.event_name }} event."
       - name: Check out repository code
@@ -12,14 +14,10 @@ jobs:
           submodules: 'true'
       - name: Setup for ROS2 Humble
         run: vcs import src < src/ros2_rust/ros2_rust_humble.repos
-        
-      - name: Restore build cache
-        uses: actions/cache@v4
+      - name: Cache setup
+        uses: Swatinem/rust-cache@v2
         with:
-          path: build/
-          key: build-cache-${{ github.ref }}
-          restore-keys: |
-            build-cache-${{ github.ref }}
+          workspaces: ./src/microcat-rs -> ../../build/microcat_rs
       - name: Build
         run: source /opt/ros/humble/setup.bash && echo ${AMENT_PREFIX_PATH} && colcon build --packages-up-to microcat_rs --merge-install
 
@@ -30,10 +28,3 @@ jobs:
         with:
           name: microcat
           path: microcat.tar.xz
-      - run: echo "This job's status is ${{ job.status }}."
-      - name: Save cache
-        if: success()
-        uses: actions/cache@v4
-        with:
-          path: build/
-          key: build-cache-${{ github.ref }}

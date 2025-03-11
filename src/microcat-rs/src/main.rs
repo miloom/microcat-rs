@@ -3,6 +3,7 @@
 use crate::consts::MAIN_LOOP_TIME_PERIOD_MS;
 use crate::serial::MotorPos;
 use bytes::BytesMut;
+use rclrs::CreateBasicExecutor;
 #[cfg(feature = "rppal")]
 use rppal::gpio::Gpio;
 use serialport::{DataBits, FlowControl, Parity, SerialPort, StopBits};
@@ -42,11 +43,11 @@ struct MicrocatNode {
 #[cfg(feature = "ros")]
 impl MicrocatNode {
     fn new(
-        context: &rclrs::Context,
+        executor: &rclrs::Executor,
         serial_stream: Arc<Mutex<Box<dyn SerialPort>>>,
         rx: Receiver<Telemetry>,
     ) -> Result<Self, rclrs::RclrsError> {
-        let node = rclrs::Node::new(context, "microcat_node")?;
+        let node = executor.create_node("microcat")?;
         let data = Arc::new(std::sync::Mutex::new(None));
         let data_cb = Arc::clone(&data);
 
@@ -143,10 +144,11 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let (mut tx, rx) = mpsc::channel::<Telemetry>(10);
 
     #[cfg(feature = "ros")]
-    let context = rclrs::Context::new(std::env::args())?;
+    let context = rclrs::Context::default_from_env()?;
+    let executor = context.create_basic_executor();
     #[cfg(feature = "ros")]
     let microcat_node = Arc::new(Mutex::new(MicrocatNode::new(
-        &context,
+        &executor,
         Arc::clone(&serial),
         rx,
     )?));
@@ -176,7 +178,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let mut new_pin = gpio.get(26)?.into_output();
     #[cfg(feature = "rppal")]
     new_pin.set_low();
-    #[cfg(feature = "rppal")]
     println!("{}, {}", pin.is_set_low(), new_pin.is_set_low());
 
     let message_buffer = bytes::BytesMut::with_capacity(1024);
@@ -187,7 +188,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .unwrap();
     let mut serial_buf = BytesMut::default();
 
-    loop {
+    while context.ok() {
         while tokio::time::Instant::now() < next_loop_exec {}
         {
             let mut port_guard = serial.lock().await;
@@ -198,8 +199,5 @@ async fn main() -> Result<(), Box<dyn Error>> {
             .checked_add(Duration::from_millis(MAIN_LOOP_TIME_PERIOD_MS as u64))
             .unwrap();
     }
-    #[allow(unreachable_code)]
-    #[cfg(feature = "ros")]
-    rclrs::spin(Arc::clone(&microcat_node.blocking_lock().node))?;
     Ok(())
 }

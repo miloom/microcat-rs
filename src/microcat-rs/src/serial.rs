@@ -66,12 +66,12 @@ pub async fn read(
                                 if let Some(accel) = msg.accel {
                                     let _ = tx
                                         .send(Telemetry::Imu(microcat_msgs::msg::Imu {
-                                            gyro_x: gyro.x as f32 / 1000.0,
-                                            gyro_y: gyro.y as f32 / 1000.0,
-                                            gyro_z: gyro.z as f32 / 1000.0,
-                                            accel_x: accel.x,
-                                            accel_y: accel.y,
-                                            accel_z: accel.z,
+                                            gyro_x: gyro.x as f32 / 131.0,
+                                            gyro_y: gyro.y as f32 / 131.0,
+                                            gyro_z: gyro.z as f32 / 131.0,
+                                            accel_x: accel.x as f32 / 100.0,
+                                            accel_y: accel.y as f32 / 100.0,
+                                            accel_z: accel.z as f32 / 100.0,
                                         }))
                                         .await;
                                 }

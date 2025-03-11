@@ -1,8 +1,8 @@
-use git2::{Cred, RemoteCallbacks, Repository};
+use git2::{Cred, RemoteCallbacks};
 use prost_build::Config;
-use std::{env, fs};
 use std::fs::{read_dir, remove_dir_all};
 use std::path::{Path, PathBuf};
+use std::{env, fs};
 
 fn main() {
     println!("cargo:rerun-if-changed=build.rs");
@@ -35,10 +35,9 @@ fn main() {
     let mut builder = git2::build::RepoBuilder::new();
     builder.fetch_options(fo);
 
-    builder.clone(
-        repo_url,
-        Path::new(cache_dir),
-    ).expect("Failed to clone repository");
+    builder
+        .clone(repo_url, Path::new(cache_dir))
+        .expect("Failed to clone repository");
 
     // Ensure the protobuf output directory exists
     fs::create_dir_all("src/serial").expect("Failed to create src/serial directory");

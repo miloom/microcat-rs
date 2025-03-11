@@ -1,18 +1,18 @@
 #![allow(dead_code)]
 #![allow(unused_variables)]
+use crate::consts::MAIN_LOOP_TIME_PERIOD_MS;
 use crate::serial::MotorPos;
+use bytes::BytesMut;
 #[cfg(feature = "rppal")]
 use rppal::gpio::Gpio;
 use serialport::{DataBits, FlowControl, Parity, SerialPort, StopBits};
 use std::error::Error;
 use std::sync::Arc;
 use std::time::Duration;
-use bytes::BytesMut;
 #[cfg(feature = "ros")]
 use std_msgs::msg::String as StringMsg;
-use tokio::sync::{mpsc, Mutex};
 use tokio::sync::mpsc::Receiver;
-use crate::consts::MAIN_LOOP_TIME_PERIOD_MS;
+use tokio::sync::{mpsc, Mutex};
 
 #[allow(dead_code)]
 mod consts;
@@ -41,7 +41,11 @@ struct MicrocatNode {
 
 #[cfg(feature = "ros")]
 impl MicrocatNode {
-    fn new(context: &rclrs::Context, serial_stream: Arc<Mutex<Box<dyn SerialPort>>>, rx: Receiver<Telemetry>) -> Result<Self, rclrs::RclrsError> {
+    fn new(
+        context: &rclrs::Context,
+        serial_stream: Arc<Mutex<Box<dyn SerialPort>>>,
+        rx: Receiver<Telemetry>,
+    ) -> Result<Self, rclrs::RclrsError> {
         let node = rclrs::Node::new(context, "microcat_node")?;
         let data = Arc::new(std::sync::Mutex::new(None));
         let data_cb = Arc::clone(&data);
@@ -80,10 +84,13 @@ impl MicrocatNode {
                 },
             )?
         };
-        let motor_status_publisher = node.create_publisher("motor_status", rclrs::QOS_PROFILE_DEFAULT)?;
+        let motor_status_publisher =
+            node.create_publisher("motor_status", rclrs::QOS_PROFILE_DEFAULT)?;
         let imu_publisher = node.create_publisher("imu", rclrs::QOS_PROFILE_DEFAULT)?;
-        let tone_detector_publisher = node.create_publisher("tone_detector", rclrs::QOS_PROFILE_DEFAULT)?;
-        let pressure_data_publisher = node.create_publisher("pressure_data", rclrs::QOS_PROFILE_DEFAULT)?;
+        let tone_detector_publisher =
+            node.create_publisher("tone_detector", rclrs::QOS_PROFILE_DEFAULT)?;
+        let pressure_data_publisher =
+            node.create_publisher("pressure_data", rclrs::QOS_PROFILE_DEFAULT)?;
         Ok(Self {
             node,
             motor_control_subscription,
@@ -102,9 +109,7 @@ impl MicrocatNode {
                 Telemetry::MotorPosition(position) => {
                     self.motor_status_publisher.publish(position).unwrap()
                 }
-                Telemetry::Imu(imu) => {
-                    self.imu_publisher.publish(imu).unwrap()
-                }
+                Telemetry::Imu(imu) => self.imu_publisher.publish(imu).unwrap(),
                 Telemetry::ToneDetector(tone_detector) => {
                     self.tone_detector_publisher.publish(tone_detector).unwrap()
                 }
@@ -123,27 +128,33 @@ enum Telemetry {
     PressureData(microcat_msgs::msg::PressureData),
 }
 
-
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    let serial = Arc::new(Mutex::new(serialport::new("/dev/ttyS0", 115_200)
-        .timeout(Duration::from_millis(100))
-        .data_bits(DataBits::Eight)
-        .flow_control(FlowControl::None)
-        .parity(Parity::None)
-        .stop_bits(StopBits::One)
-        .open().unwrap()));
+    let serial = Arc::new(Mutex::new(
+        serialport::new("/dev/ttyS0", 115_200)
+            .timeout(Duration::from_millis(100))
+            .data_bits(DataBits::Eight)
+            .flow_control(FlowControl::None)
+            .parity(Parity::None)
+            .stop_bits(StopBits::One)
+            .open()
+            .unwrap(),
+    ));
     let (mut tx, rx) = mpsc::channel::<Telemetry>(10);
-    
+
     #[cfg(feature = "ros")]
     let context = rclrs::Context::new(std::env::args())?;
     #[cfg(feature = "ros")]
-    let microcat_node = Arc::new(Mutex::new(MicrocatNode::new(&context, Arc::clone(&serial), rx)?));
+    let microcat_node = Arc::new(Mutex::new(MicrocatNode::new(
+        &context,
+        Arc::clone(&serial),
+        rx,
+    )?));
     #[cfg(feature = "ros")]
     let microcat_other_thread = Arc::clone(&microcat_node);
     #[cfg(feature = "ros")]
     tokio::spawn(async move {
-       tokio::time::sleep(Duration::from_millis(10)).await;
+        tokio::time::sleep(Duration::from_millis(10)).await;
         microcat_other_thread.lock().await.write().await;
     });
 
@@ -171,19 +182,23 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let message_buffer = bytes::BytesMut::with_capacity(1024);
     let mut initialized = false;
 
-    let mut next_loop_exec = tokio::time::Instant::now().checked_add(Duration::from_millis(MAIN_LOOP_TIME_PERIOD_MS as u64)).unwrap();
-    let mut serial_buf =  BytesMut::default();
+    let next_loop_exec = tokio::time::Instant::now()
+        .checked_add(Duration::from_millis(MAIN_LOOP_TIME_PERIOD_MS as u64))
+        .unwrap();
+    let mut serial_buf = BytesMut::default();
 
     loop {
         while tokio::time::Instant::now() < next_loop_exec {}
         {
             let mut port_guard = serial.lock().await;
-            serial::read(&mut *port_guard, &mut serial_buf, &mut initialized,&mut tx).await;
+            serial::read(&mut *port_guard, &mut serial_buf, &mut initialized, &mut tx).await;
         }
 
-        next_loop_exec.checked_add(Duration::from_millis(MAIN_LOOP_TIME_PERIOD_MS as u64)).unwrap();
+        next_loop_exec
+            .checked_add(Duration::from_millis(MAIN_LOOP_TIME_PERIOD_MS as u64))
+            .unwrap();
     }
-
+    #[allow(unreachable_code)]
     #[cfg(feature = "ros")]
     rclrs::spin(Arc::clone(&microcat_node.blocking_lock().node))?;
     Ok(())

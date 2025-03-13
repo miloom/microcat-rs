@@ -123,9 +123,9 @@ enum Telemetry {
 async fn main() -> Result<(), Box<dyn Error>> {
     let serial = Arc::new(Mutex::new(
         serialport::new("/dev/ttyAMA0", 115_200)
-            .timeout(Duration::from_millis(100))
+            .timeout(Duration::from_millis(10))
             .data_bits(DataBits::Eight)
-            .flow_control(FlowControl::None)
+            .flow_control(FlowControl::Hardware)
             .parity(Parity::None)
             .stop_bits(StopBits::One)
             .open()

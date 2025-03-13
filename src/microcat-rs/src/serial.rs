@@ -13,13 +13,11 @@ mod motor;
 mod pressure;
 mod tone_detector;
 pub async fn read(
-    // serial: &mut rppal::uart::Uart,
-    serial: &mut Box<dyn SerialPort>,
+    serial: &mut Box<(dyn SerialPort + 'static)>,
     message_buffer: &mut BytesMut,
     initialized: &mut bool,
     tx: &mut Sender<crate::Telemetry>,
-) {
-    // let mut buf = bytes::BytesMut::with_capacity(1024);
+) -> Result<(), std::io::Error> {
     let mut buf: [u8; 100] = [0; 100];
     match serial.read(&mut buf) {
         Ok(0) => {
@@ -36,11 +34,10 @@ pub async fn read(
 
             while let Some(end) = message_buffer.iter().position(|&v| v == 0) {
                 let message = message_buffer.split_to(end + 1);
-                //println!("Message {message:?}");
                 let mut dest = [0u8; 256];
                 let len = cobs::decode(message.iter().as_slice(), &mut dest);
                 if len.is_err() {
-                    return;
+                    return Ok(());
                 }
                 let len = len.unwrap();
 
@@ -126,7 +123,7 @@ pub async fn read(
                                 .await;
                         }
                         None => {
-                            return;
+                            return Ok(());
                         }
                     }
                 } else {
@@ -136,8 +133,10 @@ pub async fn read(
         }
         Err(e) => {
             eprintln!("Failed to read from serial port: {e:?}");
+            return Err(e);
         }
     }
+    Ok(())
 }
 
 pub enum MotorLocation {

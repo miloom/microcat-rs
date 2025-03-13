@@ -16,9 +16,7 @@ use tokio::sync::{mpsc, Mutex};
 #[allow(dead_code)]
 mod consts;
 mod imu;
-// #[allow(dead_code), cfg(feature = "rppal")]
 mod motors;
-// #[allow(dead_code), cfg(feature="rppal")]
 mod rgb;
 mod serial;
 
@@ -124,7 +122,7 @@ enum Telemetry {
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     let serial = Arc::new(Mutex::new(
-        serialport::new("/dev/ttyS0", 115_200)
+        serialport::new("/dev/ttyAMA0", 115_200)
             .timeout(Duration::from_millis(100))
             .data_bits(DataBits::Eight)
             .flow_control(FlowControl::None)
@@ -175,7 +173,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
         while tokio::time::Instant::now() < next_loop_exec {}
         {
             let mut port_guard = serial.lock().await;
-            serial::read(&mut *port_guard, &mut serial_buf, &mut initialized, &mut tx).await;
+            let _ =
+                serial::read(&mut *port_guard, &mut serial_buf, &mut initialized, &mut tx).await;
         }
 
         next_loop_exec

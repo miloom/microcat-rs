@@ -14,13 +14,18 @@ jobs:
           submodules: 'true'
       - name: Setup for ROS2 Humble
         run: vcs import src < src/ros2_rust/ros2_rust_humble.repos
+      - name: Directory check
+        run: ls -la && cargo
       - name: Cache setup
         uses: Swatinem/rust-cache@v2
         with:
           workspaces: ./src/microcat-rs -> ../../build/microcat_rs
+      - name: Directory check
+        run: ls -la && cargo
       - name: Build
         run: source /opt/ros/humble/setup.bash && echo ${AMENT_PREFIX_PATH} && colcon build --packages-up-to microcat_rs --merge-install
-
+      - name: Directory check
+        run: ls -la && cargo
       - name: Package Install
         run: tar cvJf microcat.tar.xz install
       - name: Upload artifacts

@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-#![allow(unused_variables)]
 use crate::rgb::Rgb;
 use crate::serial::MotorPos;
 use bytes::BytesMut;
@@ -10,6 +8,8 @@ use std::sync::Arc;
 use tokio::sync::mpsc;
 use tokio::sync::mpsc::{Receiver, Sender};
 use tokio_serial::SerialPortBuilderExt;
+use tracing::{error, info, span, trace};
+use tracing_appender::rolling;
 
 #[allow(dead_code)]
 mod consts;
@@ -41,6 +41,10 @@ impl MicrocatNode {
             "motor_control",
             rclrs::QOS_PROFILE_DEFAULT,
             move |msg: microcat_msgs::msg::MotorControl| {
+                let my_span = span!(tracing::Level::INFO, "motor_control");
+                let _enter = my_span.enter();
+                trace!("Received motor_control msg {msg:?}");
+
                 let command = serial::Command::MotorPosition(MotorPos {
                     location: match msg.location {
                         microcat_msgs::msg::MotorControl::FRONT_LEFT => {
@@ -65,7 +69,7 @@ impl MicrocatNode {
                     amplitude: msg.amplitude,
                 });
                 if let Err(error) = tx.try_send(command) {
-                    // No room for message log the error
+                    error!("Failed to send command {error:?}");
                 }
             },
         )?;
@@ -87,17 +91,24 @@ impl MicrocatNode {
         })
     }
 
+    #[tracing::instrument(level = "trace", skip(self))]
     async fn write(&mut self) {
         while let Some(msg) = self.rx.recv().await {
             match msg {
                 Telemetry::MotorPosition(position) => {
+                    trace!("Sending motor_position msg {position:?}");
                     self.motor_status_publisher.publish(position).unwrap()
                 }
-                Telemetry::Imu(imu) => self.imu_publisher.publish(imu).unwrap(),
+                Telemetry::Imu(imu) => {
+                    trace!("Sending imu msg {imu:?}");
+                    self.imu_publisher.publish(imu).unwrap()
+                }
                 Telemetry::ToneDetector(tone_detector) => {
+                    trace!("Sending tone_detector msg {tone_detector:?}");
                     self.tone_detector_publisher.publish(tone_detector).unwrap()
                 }
                 Telemetry::PressureData(pressure_data) => {
+                    trace!("Sending pressure_data msg {pressure_data:?}");
                     self.pressure_data_publisher.publish(pressure_data).unwrap()
                 }
             }
@@ -114,6 +125,13 @@ enum Telemetry {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
+    let file_appender = rolling::daily("/var/log/my_app", "my_log");
+    let (non_blocking, _guard) = tracing_appender::non_blocking(file_appender);
+    tracing_subscriber::fmt()
+        .with_writer(non_blocking)
+        .with_max_level(tracing::Level::DEBUG)
+        .init();
+
     let rgb = rgb::init_leds()?;
 
     let (mut telemetry_tx, telemetry_rx) = mpsc::channel::<Telemetry>(10);
@@ -141,6 +159,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 tokio::select! {
                     _ = shutdown_rx.changed() => {
                         println!("Shutting down ROS node...");
+                        info!("Shutting down ROS node...");
                         break;
                     }
                     _ = microcat_node.write() => {}
@@ -178,6 +197,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                     }
                     _ = shutdown_rx.changed() => {
                         println!("Shutting down Serial task...");
+                        info!("Shutting down Serial task...");
                         break;
                     }
                 }

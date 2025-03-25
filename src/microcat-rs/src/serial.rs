@@ -5,6 +5,7 @@ use prost::Message;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::sync::mpsc::Sender;
 use tokio_serial::SerialStream;
+use tracing::{debug, error, trace};
 
 mod imu;
 #[allow(clippy::all, clippy::nursery, clippy::pedantic)]
@@ -12,6 +13,8 @@ mod message;
 mod motor;
 mod pressure;
 mod tone_detector;
+
+#[tracing::instrument(level = "trace", skip(serial, tx))]
 pub async fn read(
     serial: &mut SerialStream,
     message_buffer: &mut BytesMut,
@@ -21,7 +24,7 @@ pub async fn read(
     let mut buf: [u8; 100] = [0; 100];
     match serial.read(&mut buf).await {
         Ok(0) => {
-            println!("No data read, returning");
+            trace!("No data read");
         }
         Ok(n) => {
             let bytes: BytesMut = buf[0..n].iter().collect::<BytesMut>().freeze().into();
@@ -48,6 +51,7 @@ pub async fn read(
 
                 #[allow(unused_variables)]
                 if let Ok(msg) = decoded {
+                    trace!("Protobuf message decoded successfully {msg:?}");
                     match msg.data {
                         Some(message::message::Data::Imu(msg)) => {
                             if let Some(gyro) = msg.gyro {
@@ -127,18 +131,19 @@ pub async fn read(
                         }
                     }
                 } else {
-                    eprintln!("Failed to decode");
+                    debug!("Failed to decode serial")
                 }
             }
         }
         Err(e) => {
-            eprintln!("Failed to read from serial port: {e:?}");
+            debug!("Failed to read serial buffer: {}", e);
             return Err(e);
         }
     }
     Ok(())
 }
 
+#[derive(Debug)]
 pub enum MotorLocation {
     FrontLeft,
     FrontRight,
@@ -146,6 +151,7 @@ pub enum MotorLocation {
     RearRight,
 }
 
+#[derive(Debug)]
 pub struct MotorPos {
     pub location: MotorLocation,
     pub amplitude: u32,
@@ -153,11 +159,14 @@ pub struct MotorPos {
     pub frequency: f32,
 }
 
+#[derive(Debug)]
 pub enum Command {
     MotorPosition(MotorPos),
 }
 
+#[tracing::instrument(level = "trace", skip(serial))]
 pub async fn write(serial: &mut SerialStream, command: Command) {
+    trace!("Writing to serial");
     let message = match command {
         Command::MotorPosition(pos) => {
             let data = motor::MotorTarget {
@@ -179,7 +188,7 @@ pub async fn write(serial: &mut SerialStream, command: Command) {
 
     let mut buf = BytesMut::new();
     if message.encode(&mut buf).is_err() {
-        eprintln!("Failed to encode");
+        error!("Failed to encode protobuf message");
         return;
     }
     let mut dest = [0u8; 128];

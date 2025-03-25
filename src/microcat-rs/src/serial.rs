@@ -2,9 +2,9 @@
 use crate::Telemetry;
 use bytes::BytesMut;
 use prost::Message;
-use serialport::SerialPort;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::sync::mpsc::Sender;
+use tokio_serial::SerialStream;
 
 mod imu;
 #[allow(clippy::all, clippy::nursery, clippy::pedantic)]
@@ -13,13 +13,13 @@ mod motor;
 mod pressure;
 mod tone_detector;
 pub async fn read(
-    serial: &mut Box<(dyn SerialPort + 'static)>,
+    serial: &mut SerialStream,
     message_buffer: &mut BytesMut,
     initialized: &mut bool,
     tx: &mut Sender<crate::Telemetry>,
 ) -> Result<(), std::io::Error> {
     let mut buf: [u8; 100] = [0; 100];
-    match serial.read(&mut buf) {
+    match serial.read(&mut buf).await {
         Ok(0) => {
             println!("No data read, returning");
         }
@@ -157,7 +157,7 @@ pub enum Command {
     MotorPosition(MotorPos),
 }
 
-pub fn write(serial: &mut Box<dyn SerialPort>, command: Command) {
+pub async fn write(serial: &mut SerialStream, command: Command) {
     let message = match command {
         Command::MotorPosition(pos) => {
             let data = motor::MotorTarget {
@@ -185,5 +185,5 @@ pub fn write(serial: &mut Box<dyn SerialPort>, command: Command) {
     let mut dest = [0u8; 128];
     let len = cobs::encode(buf.iter().as_slice(), &mut dest);
     dest[len] = 0;
-    let _ = serial.write(&dest[..=len]);
+    let _ = serial.write(&dest[..=len]).await;
 }

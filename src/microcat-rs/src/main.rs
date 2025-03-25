@@ -1,17 +1,15 @@
 #![allow(dead_code)]
 #![allow(unused_variables)]
-use crate::consts::MAIN_LOOP_TIME_PERIOD_MS;
+use crate::rgb::Rgb;
 use crate::serial::MotorPos;
 use bytes::BytesMut;
 use rclrs::CreateBasicExecutor;
 use rppal::gpio::Gpio;
-use serialport::{DataBits, FlowControl, Parity, SerialPort, StopBits};
 use std::error::Error;
 use std::sync::Arc;
-use std::time::Duration;
-use std_msgs::msg::String as StringMsg;
-use tokio::sync::mpsc::Receiver;
-use tokio::sync::{mpsc, Mutex};
+use tokio::sync::mpsc;
+use tokio::sync::mpsc::{Receiver, Sender};
+use tokio_serial::SerialPortBuilderExt;
 
 #[allow(dead_code)]
 mod consts;
@@ -27,54 +25,50 @@ struct MicrocatNode {
     imu_publisher: Arc<rclrs::Publisher<microcat_msgs::msg::Imu>>,
     tone_detector_publisher: Arc<rclrs::Publisher<microcat_msgs::msg::ToneDetector>>,
     pressure_data_publisher: Arc<rclrs::Publisher<microcat_msgs::msg::PressureData>>,
-    data: Arc<std::sync::Mutex<Option<StringMsg>>>,
     rx: Receiver<Telemetry>,
 }
 
 impl MicrocatNode {
     fn new(
         executor: &rclrs::Executor,
-        serial_stream: Arc<Mutex<Box<dyn SerialPort>>>,
+        rgb: Rgb,
         rx: Receiver<Telemetry>,
+        tx: Sender<serial::Command>,
     ) -> Result<Self, rclrs::RclrsError> {
         let node = executor.create_node("microcat")?;
-        let data = Arc::new(std::sync::Mutex::new(None));
-        let data_cb = Arc::clone(&data);
 
-        let serial_stream_cb = Arc::clone(&serial_stream);
-        let motor_control_subscription = {
-            node.create_subscription(
-                "motor_control",
-                rclrs::QOS_PROFILE_DEFAULT,
-                move |msg: microcat_msgs::msg::MotorControl| {
-                    let command = serial::Command::MotorPosition(MotorPos {
-                        location: match msg.location {
-                            microcat_msgs::msg::MotorControl::FRONT_LEFT => {
-                                serial::MotorLocation::FrontLeft
-                            }
-                            microcat_msgs::msg::MotorControl::FRONT_RIGHT => {
-                                serial::MotorLocation::FrontRight
-                            }
-                            microcat_msgs::msg::MotorControl::REAR_LEFT => {
-                                serial::MotorLocation::RearLeft
-                            }
-                            microcat_msgs::msg::MotorControl::REAR_RIGHT => {
-                                serial::MotorLocation::RearRight
-                            }
-                            _ => {
-                                // We will not panic since the sender might send invalid data
-                                return;
-                            }
-                        },
-                        target_position: msg.position,
-                        frequency: msg.frequency,
-                        amplitude: msg.amplitude,
-                    });
-                    let mut guard = serial_stream_cb.blocking_lock();
-                    serial::write(&mut *guard, command);
-                },
-            )?
-        };
+        let motor_control_subscription = node.create_subscription(
+            "motor_control",
+            rclrs::QOS_PROFILE_DEFAULT,
+            move |msg: microcat_msgs::msg::MotorControl| {
+                let command = serial::Command::MotorPosition(MotorPos {
+                    location: match msg.location {
+                        microcat_msgs::msg::MotorControl::FRONT_LEFT => {
+                            serial::MotorLocation::FrontLeft
+                        }
+                        microcat_msgs::msg::MotorControl::FRONT_RIGHT => {
+                            serial::MotorLocation::FrontRight
+                        }
+                        microcat_msgs::msg::MotorControl::REAR_LEFT => {
+                            serial::MotorLocation::RearLeft
+                        }
+                        microcat_msgs::msg::MotorControl::REAR_RIGHT => {
+                            serial::MotorLocation::RearRight
+                        }
+                        _ => {
+                            // We will not panic since the sender might send invalid data
+                            return;
+                        }
+                    },
+                    target_position: msg.position,
+                    frequency: msg.frequency,
+                    amplitude: msg.amplitude,
+                });
+                if let Err(error) = tx.try_send(command) {
+                    // No room for message log the error
+                }
+            },
+        )?;
         let motor_status_publisher =
             node.create_publisher("motor_status", rclrs::QOS_PROFILE_DEFAULT)?;
         let imu_publisher = node.create_publisher("imu", rclrs::QOS_PROFILE_DEFAULT)?;
@@ -85,7 +79,6 @@ impl MicrocatNode {
         Ok(Self {
             node,
             motor_control_subscription,
-            data,
             rx,
             motor_status_publisher,
             imu_publisher,
@@ -121,37 +114,40 @@ enum Telemetry {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    let serial = Arc::new(Mutex::new(
-        serialport::new("/dev/ttyAMA0", 115_200)
-            .timeout(Duration::from_millis(10))
-            .data_bits(DataBits::Eight)
-            .flow_control(FlowControl::Hardware)
-            .parity(Parity::None)
-            .stop_bits(StopBits::One)
-            .open()
-            .unwrap(),
-    ));
-    let (mut tx, rx) = mpsc::channel::<Telemetry>(10);
+    let rgb = rgb::init_leds()?;
+
+    let (mut telemetry_tx, telemetry_rx) = mpsc::channel::<Telemetry>(10);
+    let (command_tx, mut command_rx) = mpsc::channel::<serial::Command>(10);
+    let (shutdown_tx, shutdown_rx) = tokio::sync::watch::channel(false);
+    let shutdown_signal_task = {
+        let shutdown_tx = shutdown_tx.clone();
+        tokio::spawn(async move {
+            tokio::signal::ctrl_c()
+                .await
+                .expect("Failed to install Ctrl+C handler");
+            let _ = shutdown_tx.send(true);
+        })
+    };
 
     let context = rclrs::Context::default_from_env()?;
     let executor = context.create_basic_executor();
-    let microcat_node = Arc::new(Mutex::new(MicrocatNode::new(
-        &executor,
-        Arc::clone(&serial),
-        rx,
-    )?));
-    let microcat_other_thread = Arc::clone(&microcat_node);
-    tokio::spawn(async move {
-        tokio::time::sleep(Duration::from_millis(10)).await;
-        microcat_other_thread.lock().await.write().await;
-    });
 
-    /*
-    let mut rgb = rgb::init_leds()?;
-
-    tokio::task::spawn(async move {
-        rgb::test_leds(&mut rgb).await.unwrap();
-    });*/
+    let ros_task = {
+        let mut shutdown_rx = shutdown_rx.clone();
+        tokio::spawn(async move {
+            let mut microcat_node = MicrocatNode::new(&executor, rgb, telemetry_rx, command_tx)
+                .expect("Failed to create microcat node");
+            loop {
+                tokio::select! {
+                    _ = shutdown_rx.changed() => {
+                        println!("Shutting down ROS node...");
+                        break;
+                    }
+                    _ = microcat_node.write() => {}
+                }
+            }
+        })
+    };
 
     let gpio = Gpio::new()?;
     // Setting pins 19 and 26 will configure the MUX to connect arduino to rpi
@@ -161,25 +157,35 @@ async fn main() -> Result<(), Box<dyn Error>> {
     new_pin.set_low();
     println!("{}, {}", pin.is_set_low(), new_pin.is_set_low());
 
-    let message_buffer = bytes::BytesMut::with_capacity(1024);
-    let mut initialized = false;
+    let serial_task = {
+        let mut shutdown_rx = shutdown_rx.clone();
+        tokio::spawn(async move {
+            let mut serial_buf = BytesMut::default();
+            let mut initialized = false;
+            let mut serial = tokio_serial::new("/dev/ttyAMA0", 115_200)
+                .open_native_async()
+                .expect("Failed to open serial port");
 
-    let next_loop_exec = tokio::time::Instant::now()
-        .checked_add(Duration::from_millis(MAIN_LOOP_TIME_PERIOD_MS as u64))
-        .unwrap();
-    let mut serial_buf = BytesMut::default();
+            loop {
+                tokio::select! {
+                     _ = serial::read(
+                        &mut serial,
+                        &mut serial_buf,
+                        &mut initialized,
+                        &mut telemetry_tx) => {}
+                    Some(command) = command_rx.recv() => {
+                        serial::write(&mut serial, command).await;
+                    }
+                    _ = shutdown_rx.changed() => {
+                        println!("Shutting down Serial task...");
+                        break;
+                    }
+                }
+            }
+        })
+    };
 
-    while context.ok() {
-        while tokio::time::Instant::now() < next_loop_exec {}
-        {
-            let mut port_guard = serial.lock().await;
-            let _ =
-                serial::read(&mut *port_guard, &mut serial_buf, &mut initialized, &mut tx).await;
-        }
+    let (_, _, _) = tokio::join!(serial_task, ros_task, shutdown_signal_task);
 
-        next_loop_exec
-            .checked_add(Duration::from_millis(MAIN_LOOP_TIME_PERIOD_MS as u64))
-            .unwrap();
-    }
     Ok(())
 }

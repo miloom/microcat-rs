@@ -15,9 +15,7 @@ fn main() {
     let proto_dir = format!("{}/proto", cache_dir);
 
     // Ensure the cache directory exists
-    fs::create_dir_all(cache_dir).expect("Failed to create cache directory");
-
-    remove_dir_all(Path::new(cache_dir)).unwrap();
+    let _ = fs::create_dir_all(cache_dir);
 
     let mut callbacks = RemoteCallbacks::new();
     callbacks.credentials(|_url, username_from_url, _allowed_types| {
@@ -32,12 +30,19 @@ fn main() {
     let mut fo = git2::FetchOptions::new();
     fo.remote_callbacks(callbacks);
 
-    let mut builder = git2::build::RepoBuilder::new();
-    builder.fetch_options(fo);
+    if let Ok(repo) = git2::Repository::open(cache_dir) {
+        repo.checkout_head(Some(git2::build::CheckoutBuilder::default().force()))
+            .expect("Failed to checkout HEAD");
+    } else {
+        let mut builder = git2::build::RepoBuilder::new();
+        builder.fetch_options(fo);
 
-    builder
-        .clone(repo_url, Path::new(cache_dir))
-        .expect("Failed to clone repository");
+        builder.branch("main");
+
+        builder
+            .clone(repo_url, Path::new(cache_dir))
+            .expect("Failed to clone repository");
+    }
 
     // Ensure the protobuf output directory exists
     fs::create_dir_all("src/serial").expect("Failed to create src/serial directory");

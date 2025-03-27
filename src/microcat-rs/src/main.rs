@@ -13,8 +13,6 @@ use tracing_appender::rolling;
 
 #[allow(dead_code)]
 mod consts;
-mod imu;
-mod motors;
 mod rgb;
 mod serial;
 

@@ -29,6 +29,7 @@ impl Motor {
     }
 }
 
+#[allow(unused)]
 pub async fn test(i2c: Arc<Mutex<I2c>>) -> Result<(), Box<dyn Error>> {
     let join = tokio::task::spawn(async move {
         loop {

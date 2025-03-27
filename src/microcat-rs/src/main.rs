@@ -19,8 +19,9 @@ mod rgb;
 mod serial;
 
 struct MicrocatNode {
-    node: Arc<rclrs::Node>,
-    motor_control_subscription: Arc<rclrs::Subscription<microcat_msgs::msg::MotorControl>>,
+    _node: Arc<rclrs::Node>,
+    _motor_control_subscription: Arc<rclrs::Subscription<microcat_msgs::msg::MotorControl>>,
+    _rgb_subscription: Arc<rclrs::Subscription<microcat_msgs::msg::Led>>,
     motor_status_publisher: Arc<rclrs::Publisher<microcat_msgs::msg::MotorStatus>>,
     imu_publisher: Arc<rclrs::Publisher<microcat_msgs::msg::Imu>>,
     tone_detector_publisher: Arc<rclrs::Publisher<microcat_msgs::msg::ToneDetector>>,
@@ -31,13 +32,13 @@ struct MicrocatNode {
 impl MicrocatNode {
     fn new(
         executor: &rclrs::Executor,
-        rgb: Rgb,
+        mut rgb: Rgb,
         rx: Receiver<Telemetry>,
         tx: Sender<serial::Command>,
     ) -> Result<Self, rclrs::RclrsError> {
         let node = executor.create_node("microcat")?;
 
-        let motor_control_subscription = node.create_subscription(
+        let _motor_control_subscription = node.create_subscription(
             "motor_control",
             rclrs::QOS_PROFILE_DEFAULT,
             move |msg: microcat_msgs::msg::MotorControl| {
@@ -73,6 +74,22 @@ impl MicrocatNode {
                 }
             },
         )?;
+
+        let _rgb_subscription = node.create_subscription(
+            "rgb_led",
+            rclrs::QOS_PROFILE_DEFAULT,
+            move |msg: microcat_msgs::msg::Led| {
+                let my_span = span!(tracing::Level::INFO, "rgb control");
+                let _enter = my_span.enter();
+                trace!("Received rgb_led msg {msg:?}");
+                rgb.set_color(
+                    msg.red.clamp(0.0, 100.0),
+                    msg.green.clamp(0.0, 100.0),
+                    msg.blue.clamp(0.0, 100.0),
+                );
+            },
+        )?;
+
         let motor_status_publisher =
             node.create_publisher("motor_status", rclrs::QOS_PROFILE_DEFAULT)?;
         let imu_publisher = node.create_publisher("imu", rclrs::QOS_PROFILE_DEFAULT)?;
@@ -81,8 +98,9 @@ impl MicrocatNode {
         let pressure_data_publisher =
             node.create_publisher("pressure_data", rclrs::QOS_PROFILE_DEFAULT)?;
         Ok(Self {
-            node,
-            motor_control_subscription,
+            _node: node,
+            _motor_control_subscription,
+            _rgb_subscription,
             rx,
             motor_status_publisher,
             imu_publisher,
@@ -132,7 +150,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .with_max_level(tracing::Level::DEBUG)
         .init();
 
-    let rgb = rgb::init_leds()?;
+    let rgb = rgb::Rgb::init_leds()?;
 
     let (mut telemetry_tx, telemetry_rx) = mpsc::channel::<Telemetry>(10);
     let (command_tx, mut command_rx) = mpsc::channel::<serial::Command>(10);

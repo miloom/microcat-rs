@@ -1,6 +1,6 @@
 use git2::{Cred, RemoteCallbacks};
 use prost_build::Config;
-use std::fs::{read_dir, remove_dir_all};
+use std::fs::read_dir;
 use std::path::{Path, PathBuf};
 use std::{env, fs};
 

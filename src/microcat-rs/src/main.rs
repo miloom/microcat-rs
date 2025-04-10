@@ -38,7 +38,6 @@ impl MicrocatNode {
 
         let _motor_control_subscription = node.create_subscription(
             "motor_control",
-            rclrs::QOS_PROFILE_DEFAULT,
             move |msg: microcat_msgs::msg::MotorControl| {
                 let my_span = span!(tracing::Level::INFO, "motor_control");
                 let _enter = my_span.enter();
@@ -73,10 +72,8 @@ impl MicrocatNode {
             },
         )?;
 
-        let _rgb_subscription = node.create_subscription(
-            "rgb_led",
-            rclrs::QOS_PROFILE_DEFAULT,
-            move |msg: microcat_msgs::msg::Led| {
+        let _rgb_subscription =
+            node.create_subscription("rgb_led", move |msg: microcat_msgs::msg::Led| {
                 let my_span = span!(tracing::Level::INFO, "rgb control");
                 let _enter = my_span.enter();
                 trace!("Received rgb_led msg {msg:?}");
@@ -85,16 +82,12 @@ impl MicrocatNode {
                     msg.green.clamp(0.0, 100.0),
                     msg.blue.clamp(0.0, 100.0),
                 );
-            },
-        )?;
+            })?;
 
-        let motor_status_publisher =
-            node.create_publisher("motor_status", rclrs::QOS_PROFILE_DEFAULT)?;
-        let imu_publisher = node.create_publisher("imu", rclrs::QOS_PROFILE_DEFAULT)?;
-        let tone_detector_publisher =
-            node.create_publisher("tone_detector", rclrs::QOS_PROFILE_DEFAULT)?;
-        let pressure_data_publisher =
-            node.create_publisher("pressure_data", rclrs::QOS_PROFILE_DEFAULT)?;
+        let motor_status_publisher = node.create_publisher("motor_status")?;
+        let imu_publisher = node.create_publisher("imu")?;
+        let tone_detector_publisher = node.create_publisher("tone_detector")?;
+        let pressure_data_publisher = node.create_publisher("pressure_data")?;
         Ok(Self {
             _node: node,
             _motor_control_subscription,

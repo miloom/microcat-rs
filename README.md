@@ -59,6 +59,56 @@ rosidl_runtime_rs and rosidl_generator_rs do not end with *(ros.ament_cargo)*
 sudo apt install libudev-dev -y
 ```
 
+6. LibCamera setup
+
+We will be cross compiling libcamera because RPI is quite weak and development PC is most likely more powerful.
+
+1. Download newer version of Meson Build from https://github.com/mesonbuild/meson/releases
+2. Extract the archive
+    ```bash
+    tar -xvf meson-1.x.y.tar.gz
+    ```
+3. Install on the system
+    ```bash
+    sudo python meson-1.x.y/setup.py install
+    ```
+4. Clone libcamera
+    ```bash
+    git clone https://git.libcamera.org/libcamera/libcamera.git
+    cd libcamera
+    git checkout v0.3.2
+    ```
+5. Add arm64 package repositories
+    ```bash
+    sudo dpkg --add-architecture arm64 && echo -e 'deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports jammy main restricted universe multiverse\ndeb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports jammy-updates main restricted universe multiverse\ndeb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports jammy-security main restricted universe multiverse' | sudo tee /etc/apt/sources.list.d/ubuntu-ports-arm64.list > /dev/null && sudo apt update
+    ```
+6. Install dependencies
+    ```bash
+    sudo apt install gcc-aarch64-linux-gnu g++-aarch64-linux-gnu pkg-config ninja-build libyaml-dev:arm64 python3-yaml python3-ply python3-jinja2 openssl libudev-dev:arm64 libevent-dev libssl-dev:arm64 
+    ```
+7. Create cross file `aarch64_cross.txt`
+    ```text
+    [binaries]
+    c = 'aarch64-linux-gnu-gcc'
+    cpp = 'aarch64-linux-gnu-g++'
+    ar = 'aarch64-linux-gnu-gcc-ar'
+    strip = 'aarch64-linux-gnu-strip'
+    pkg-config = 'aarch64-linux-gnu-pkg-config'
+    cmake = 'cmake'
+    
+    [host_machine]
+    system = 'linux'
+    cpu_family = 'aarch64'
+    cpu = 'aarch64'
+    endian = 'little'
+    ```
+8. Build
+   ```bash
+   meson setup cross-build --cross-file aarch64_cross.txt --buildtype=release
+   ninja -C cross-build 
+   ```
+8.
+
 ## Build Instructions
 
 When building you have to source your ROS2 install

@@ -1,6 +1,7 @@
 src/microcat-rs/target
 src/microcat-rs/src/serial/
 
+src/ros2-rust
 src/ros2
 log
 install

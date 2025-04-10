@@ -22,10 +22,8 @@ jobs:
           workspaces: ./src/microcat-rs -> ../../build/microcat_rs
       - name: Build
         run: source /opt/ros/humble/setup.bash && echo ${AMENT_PREFIX_PATH} && colcon build --packages-up-to microcat_rs --merge-install
-      - name: Package Install
-        run: tar cvJf microcat.tar.xz install
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: microcat
-          path: microcat.tar.xz
+          path: install

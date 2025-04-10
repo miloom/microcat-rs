@@ -141,7 +141,7 @@ enum Telemetry {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    let file_appender = rolling::daily("/var/log/my_app", "my_log");
+    let file_appender = rolling::daily("/var/log/microcat", "microcat_log");
     let (non_blocking, _guard) = tracing_appender::non_blocking(file_appender);
     tracing_subscriber::fmt()
         .with_writer(non_blocking)

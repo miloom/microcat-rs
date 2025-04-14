@@ -1,0 +1,12 @@
+[env]
+#AR = "aarch64-linux-gnu-ar"
+#CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER = "aarch64-linux-gnu-gcc"
+#CC_aarch64_unknown_linux_gnu = "aarch64-linux-gnu-gcc"
+CFLAGS = "-Ilibcamera/include"
+CRATE_CC_NO_DEFAULTS = "1"
+#C = "aarch64-linux-gnu-gcc"
+#CXX = "aarch64-linux-gnu-g++"
+CXXFLAGS = "-Ilibcamera/include"
+PKG_CONFIG_ALLOW_CROSS = "1"
+PKG_CONFIG_PATH = "libcamera/lib/pkgconfig"
+#RUSTFLAGS = "-C linker=aarch64-linux-gnu-gcc"

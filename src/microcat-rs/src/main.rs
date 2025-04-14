@@ -15,6 +15,7 @@ use tracing_appender::rolling;
 mod consts;
 mod rgb;
 mod serial;
+mod camera;
 
 struct MicrocatNode {
     _node: Arc<rclrs::Node>,

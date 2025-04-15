@@ -36,6 +36,7 @@ impl MicrocatNode {
         rx: Receiver<Telemetry>,
         tx: Sender<serial::Command>,
     ) -> Result<Self, rclrs::RclrsError> {
+        info!("Creating microcat node");
         let node = executor.create_node("microcat")?;
 
         let _motor_control_subscription = node.create_subscription(
@@ -156,6 +157,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     info!("Starting microcat");
 
     let rgb = rgb::Rgb::init_leds()?;
+    info!("LED initialized");
 
     let (telemetry_tx, telemetry_rx) = mpsc::channel::<Telemetry>(10);
     let (command_tx, mut command_rx) = mpsc::channel::<serial::Command>(10);
@@ -169,6 +171,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
             let _ = shutdown_tx.send(true);
         })
     };
+    info!("Channels created!");
 
     let context = rclrs::Context::default_from_env()?;
     let executor = context.create_basic_executor();

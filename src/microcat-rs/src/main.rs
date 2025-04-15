@@ -11,11 +11,11 @@ use tokio_serial::SerialPortBuilderExt;
 use tracing::{error, info, span, trace};
 use tracing_appender::rolling;
 
+mod camera;
 #[allow(dead_code)]
 mod consts;
 mod rgb;
 mod serial;
-mod camera;
 
 struct MicrocatNode {
     _node: Arc<rclrs::Node>,
@@ -135,7 +135,10 @@ enum Telemetry {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    let file_appender = rolling::daily("/var/log/microcat", "microcat_log");
+    let home_dir = std::env::var("HOME").unwrap();
+    let log_path = format!("{}/.microcat/logs", home_dir);
+    std::fs::create_dir_all(&log_path).unwrap();
+    let file_appender = rolling::daily(log_path, "microcat_log");
     let (non_blocking, _guard) = tracing_appender::non_blocking(file_appender);
     tracing_subscriber::fmt()
         .with_writer(non_blocking)

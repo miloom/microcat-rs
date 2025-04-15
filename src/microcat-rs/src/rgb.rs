@@ -4,7 +4,7 @@ use rppal::{gpio, pwm};
 use std::error::Error;
 use std::thread;
 use std::time::Duration;
-use tracing::error;
+use tracing::{debug, error};
 
 #[derive(Debug)]
 enum Led {
@@ -21,6 +21,7 @@ pub struct Rgb {
 
 impl Rgb {
     pub fn init_leds() -> Result<Rgb, Box<dyn Error>> {
+        debug!("Initializing leds");
         let red_pwm = pwm::Pwm::with_frequency(
             pwm::Channel::Pwm0,
             LED_PWM_FREQUENCY,
@@ -28,6 +29,7 @@ impl Rgb {
             pwm::Polarity::Normal,
             false,
         )?;
+        debug!("RED done");
         let blue_pwm = pwm::Pwm::with_frequency(
             pwm::Channel::Pwm1,
             LED_PWM_FREQUENCY,
@@ -35,9 +37,10 @@ impl Rgb {
             pwm::Polarity::Normal,
             false,
         )?;
+        debug!("BLUE done");
         let mut green_pwm = gpio::Gpio::new()?.get(G_LED)?.into_output();
         green_pwm.set_pwm_frequency(LED_PWM_FREQUENCY, 0.0)?;
-
+        debug!("GREEN done");
         Ok(Rgb {
             red: Led::Pwm(red_pwm),
             green: Led::Gpio(green_pwm),

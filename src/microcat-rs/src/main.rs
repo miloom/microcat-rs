@@ -1,3 +1,4 @@
+use crate::camera::Camera;
 use crate::rgb::Rgb;
 use crate::serial::MotorPos;
 use bytes::BytesMut;
@@ -25,6 +26,7 @@ struct MicrocatNode {
     imu_publisher: Arc<rclrs::Publisher<microcat_msgs::msg::Imu>>,
     tone_detector_publisher: Arc<rclrs::Publisher<microcat_msgs::msg::ToneDetector>>,
     pressure_data_publisher: Arc<rclrs::Publisher<microcat_msgs::msg::PressureData>>,
+    camera_image_publisher: Arc<rclrs::Publisher<sensor_msgs::msg::Image>>,
     rx: Receiver<Telemetry>,
 }
 
@@ -89,6 +91,7 @@ impl MicrocatNode {
         let imu_publisher = node.create_publisher("imu")?;
         let tone_detector_publisher = node.create_publisher("tone_detector")?;
         let pressure_data_publisher = node.create_publisher("pressure_data")?;
+        let camera_image_publisher = node.create_publisher("camera_image")?;
         Ok(Self {
             _node: node,
             _motor_control_subscription,
@@ -98,6 +101,7 @@ impl MicrocatNode {
             imu_publisher,
             tone_detector_publisher,
             pressure_data_publisher,
+            camera_image_publisher,
         })
     }
 
@@ -107,19 +111,23 @@ impl MicrocatNode {
             match msg {
                 Telemetry::MotorPosition(position) => {
                     trace!("Sending motor_position msg {position:?}");
-                    self.motor_status_publisher.publish(position).unwrap()
+                    let _ = self.motor_status_publisher.publish(position);
                 }
                 Telemetry::Imu(imu) => {
                     trace!("Sending imu msg {imu:?}");
-                    self.imu_publisher.publish(imu).unwrap()
+                    let _ = self.imu_publisher.publish(imu);
                 }
                 Telemetry::ToneDetector(tone_detector) => {
                     trace!("Sending tone_detector msg {tone_detector:?}");
-                    self.tone_detector_publisher.publish(tone_detector).unwrap()
+                    let _ = self.tone_detector_publisher.publish(tone_detector);
                 }
                 Telemetry::PressureData(pressure_data) => {
                     trace!("Sending pressure_data msg {pressure_data:?}");
-                    self.pressure_data_publisher.publish(pressure_data).unwrap()
+                    let _ = self.pressure_data_publisher.publish(pressure_data);
+                }
+                Telemetry::CameraData(image) => {
+                    trace!("Sending camera_data msg");
+                    let _ = self.camera_image_publisher.publish(image);
                 }
             }
         }
@@ -131,6 +139,7 @@ enum Telemetry {
     Imu(microcat_msgs::msg::Imu),
     ToneDetector(microcat_msgs::msg::ToneDetector),
     PressureData(microcat_msgs::msg::PressureData),
+    CameraData(sensor_msgs::msg::Image),
 }
 
 #[tokio::main]
@@ -149,7 +158,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let rgb = rgb::Rgb::init_leds()?;
 
-    let (mut telemetry_tx, telemetry_rx) = mpsc::channel::<Telemetry>(10);
+    let (telemetry_tx, telemetry_rx) = mpsc::channel::<Telemetry>(10);
     let (command_tx, mut command_rx) = mpsc::channel::<serial::Command>(10);
     let (shutdown_tx, shutdown_rx) = tokio::sync::watch::channel(false);
     let shutdown_signal_task = {
@@ -191,6 +200,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     new_pin.set_low();
     println!("{}, {}", pin.is_set_low(), new_pin.is_set_low());
 
+    let mut serial_telemetry_tx = telemetry_tx.clone();
     let serial_task = {
         let mut shutdown_rx = shutdown_rx.clone();
         tokio::spawn(async move {
@@ -208,7 +218,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                         &mut serial,
                         &mut serial_buf,
                         &mut initialized,
-                        &mut telemetry_tx) => {}
+                        &mut serial_telemetry_tx) => {}
                     Some(command) = command_rx.recv() => {
                         serial::write(&mut serial, command).await;
                     }
@@ -222,7 +232,15 @@ async fn main() -> Result<(), Box<dyn Error>> {
         })
     };
 
-    let (_, _, _) = tokio::join!(serial_task, ros_task, shutdown_signal_task);
+    let camera_telemetry_tx = telemetry_tx.clone();
+    let camera = Camera::new(camera_telemetry_tx);
+
+    let (_, _, _, _) = tokio::join!(
+        serial_task,
+        ros_task,
+        shutdown_signal_task,
+        camera.join_handle
+    );
 
     Ok(())
 }

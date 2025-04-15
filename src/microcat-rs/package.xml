@@ -7,6 +7,7 @@
 
     <depend>rclrs</depend>
     <depend>std_msgs</depend>
+    <depend>sensor_msgs</depend>
     <depend>rosidl_runtime_rs</depend>
     <depend>microcat_msgs</depend>
 

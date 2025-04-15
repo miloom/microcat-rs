@@ -1,6 +1,6 @@
+use crate::Telemetry;
 use libcamera::{
     camera::CameraConfigurationStatus,
-    camera_manager::CameraManager,
     framebuffer::AsFrameBuffer,
     framebuffer_allocator::{FrameBuffer, FrameBufferAllocator},
     framebuffer_map::MemoryMappedFrameBuffer,
@@ -8,12 +8,17 @@ use libcamera::{
     properties,
     stream::StreamRole,
 };
+use tokio::sync::mpsc::Sender;
+use tokio::task::JoinHandle;
 use tokio::time::Duration;
-use tracing::{error, info, span, trace};
-pub struct Camera {}
+use tracing::{debug, info};
+
+pub struct Camera {
+    pub join_handle: JoinHandle<()>,
+}
 
 impl Camera {
-    pub fn new() -> Camera {
+    pub fn new(telemetry_tx: Sender<crate::Telemetry>) -> Camera {
         let manager = libcamera::camera_manager::CameraManager::new().unwrap();
         let cams = manager.cameras();
         let cam = cams.get(0).expect("No camera found");
@@ -61,16 +66,17 @@ impl Camera {
         let cfg = cfgs.get(0).unwrap();
         let stream = cfg.stream().unwrap();
         let buffers = alloc.alloc(&stream).unwrap();
-        println!("Allocated {} buffers", buffers.len());
+        debug!("Allocated {} buffers", buffers.len());
         let buffers = buffers
             .into_iter()
             .map(|buf| MemoryMappedFrameBuffer::new(buf).unwrap())
             .collect::<Vec<_>>();
 
-        let mut reqs = buffers
+        let reqs = buffers
             .into_iter()
-            .map(|buf| {
-                let mut req = cam.create_request(None).unwrap();
+            .enumerate()
+            .map(|(i, buf)| {
+                let mut req = cam.create_request(Some(i as u64)).unwrap();
                 req.add_buffer(&stream, buf).unwrap();
                 req
             })
@@ -80,29 +86,54 @@ impl Camera {
             tx.send(req).unwrap();
         });
         cam.start(None).unwrap();
-        cam.queue_request(reqs.pop().unwrap()).unwrap();
-        let req = rx
-            .recv_timeout(Duration::from_secs(2))
-            .expect("Camera request failed");
-        let framebuffer: &MemoryMappedFrameBuffer<FrameBuffer> = req.buffer(&stream).unwrap();
-        let planes = framebuffer.data();
-        use std::io::Write;
+        for req in reqs {
+            debug!("Request queued for execution: {req:#?}");
+            cam.queue_request(req).unwrap();
+        }
         let width = cfg.get_size().width as usize;
         let height = cfg.get_size().height as usize;
-        let rgb_data = planes.first().unwrap();
-        let rgb_len = framebuffer
-            .metadata()
-            .unwrap()
-            .planes()
-            .get(0)
-            .unwrap()
-            .bytes_used as usize;
 
-        let filename = "picture.ppm".to_string();
-        let mut file = std::fs::File::create(&filename).unwrap();
-        write!(file, "P6\n{} {}\n255\n", width, height).unwrap(); // PPM header
-        file.write_all(&rgb_data[..rgb_len]).unwrap();
-        info!("Written PPM image to {}", &filename);
-        Camera {}
+        let join_handle = tokio::task::spawn(async move {
+            let req = rx
+                .recv_timeout(Duration::from_secs(2))
+                .expect("Camera request failed");
+
+            debug!("Camera request {:?} completed!", req);
+            debug!("Metadata: {:#?}", req.metadata());
+
+            let framebuffer: &MemoryMappedFrameBuffer<FrameBuffer> = req.buffer(&stream).unwrap();
+            debug!("FrameBuffer metadata: {:#?}", framebuffer.metadata());
+
+            let planes = framebuffer.data();
+            let rgb_data = planes.first().unwrap();
+            // Actual encoded data will be smalled than framebuffer size, its length can be obtained from metadata.
+            let bytes_used = framebuffer
+                .metadata()
+                .unwrap()
+                .planes()
+                .get(0)
+                .unwrap()
+                .bytes_used as usize;
+            let now = tokio::time::Instant::now();
+            let header = std_msgs::msg::Header {
+                stamp: builtin_interfaces::msg::Time {
+                    sec: now.elapsed().as_secs() as i32,
+                    nanosec: now.elapsed().subsec_nanos(),
+                },
+                frame_id: String::new(),
+            };
+            let image = sensor_msgs::msg::Image {
+                header,
+                height: height as u32,
+                width: width as u32,
+                encoding: "rgb8".to_string(),
+                is_bigendian: 0,
+                step: (width * 3) as u32,
+                data: rgb_data[..bytes_used].to_vec(),
+            };
+            let _ = telemetry_tx.send(Telemetry::CameraData(image)).await;
+        });
+
+        Camera { join_handle }
     }
 }

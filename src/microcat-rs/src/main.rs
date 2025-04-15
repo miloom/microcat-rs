@@ -1,4 +1,3 @@
-use crate::camera::Camera;
 use crate::rgb::Rgb;
 use crate::serial::MotorPos;
 use bytes::BytesMut;
@@ -232,15 +231,13 @@ async fn main() -> Result<(), Box<dyn Error>> {
         })
     };
 
-    let camera_telemetry_tx = telemetry_tx.clone();
-    let camera = Camera::new(camera_telemetry_tx);
+    {
+        let camera_telemetry_tx = telemetry_tx.clone();
+        let shutdown_rx = shutdown_rx.clone();
+        crate::camera::run_camera(camera_telemetry_tx, shutdown_rx)
+    };
 
-    let (_, _, _, _) = tokio::join!(
-        serial_task,
-        ros_task,
-        shutdown_signal_task,
-        camera.join_handle
-    );
+    let (_, _, _) = tokio::join!(serial_task, ros_task, shutdown_signal_task,);
 
     Ok(())
 }

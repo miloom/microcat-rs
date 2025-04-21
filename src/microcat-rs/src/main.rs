@@ -192,12 +192,29 @@ async fn main() -> Result<(), Box<dyn Error>> {
     };
 
     let gpio = Gpio::new()?;
-    // Setting pins 19 and 26 will configure the MUX to connect arduino to rpi
-    let mut pin = gpio.get(19)?.into_output();
-    pin.set_low();
-    let mut new_pin = gpio.get(26)?.into_output();
-    new_pin.set_low();
-    println!("{}, {}", pin.is_set_low(), new_pin.is_set_low());
+    #[cfg(feature = "v21-hardware")]
+    let (_, _) = {
+        // Setting pins 19 and 26 will configure the MUX to connect arduino to rpi
+        let mut mux_a = gpio.get(19)?.into_output();
+        mux_a.set_low();
+        let mut mux_b = gpio.get(26)?.into_output();
+        mux_b.set_low();
+        (mux_a, mux_b)
+    };
+
+    #[cfg(feature = "v26-hardware")]
+    let (_, _, _) = {
+        let mut mux_enable_pin = gpio.get(22)?.into_output();
+        mux_enable_pin.set_high(); // Disable mux to configure
+        let mut mux_a = gpio.get(24)?.into_output();
+        let mut mux_b = gpio.get(25)?.into_output();
+        // Configure mux for RPI to Atmega connection
+        mux_a.set_low();
+        mux_b.set_low();
+        // Enable mux after configuring
+        mux_enable_pin.set_low();
+        (mux_a, mux_b, mux_enable_pin)
+    };
 
     let mut serial_telemetry_tx = telemetry_tx.clone();
     let serial_task = {

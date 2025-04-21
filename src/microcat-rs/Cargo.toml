@@ -4,6 +4,11 @@ version = "0.1.0"
 edition = "2021"
 build = "build.rs"
 
+[features]
+default = ["v21-hardware"]
+v21-hardware = []
+v26-hardware = []
+
 [dependencies]
 rppal = { version = "0.18.0", features = ["embedded-hal"] }
 tokio = { version = "1.38.0", features = ["io-util", "macros", "rt-multi-thread", "signal", "sync", "time"] }

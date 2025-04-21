@@ -27,3 +27,21 @@ jobs:
         with:
           name: microcat
           path: install
+
+  Lint-code:
+    runs-on: [ self-hosted. linux, arm64 ]
+    needs: [ Build-code ]
+    env:
+      CARGO_TERM_COLOR: always
+    steps:
+      - run: echo "The job was automatically triggered by a ${{ github.event_name }} event."
+      - name: Check out repository code
+        uses: actions/checkout@v4
+        with:
+          submodules: 'true'
+      - name: Setup for ROS2 Humble
+        run: vcs import src < src/ros2_rust/ros2_rust_humble.repos
+      - name: Install Rust
+        run: curl https://sh.rustup.rs -sSf | sh -s -- -y
+      - name: Clippy
+        run: cd src/microcat-rs && cargo clippy

@@ -1,4 +1,5 @@
 use crate::Telemetry;
+use libcamera::geometry::Size;
 use libcamera::request::ReuseFlag;
 use libcamera::{
     camera::CameraConfigurationStatus,
@@ -11,7 +12,7 @@ use libcamera::{
 };
 use tokio::sync::mpsc::Sender;
 use tokio::sync::watch::Receiver;
-use tracing::{debug, info};
+use tracing::{debug, info, trace};
 
 pub fn run_camera(telemetry_tx: Sender<crate::Telemetry>, mut shutdown_rx: Receiver<bool>) {
     std::thread::spawn(move || {
@@ -48,7 +49,13 @@ pub fn run_camera(telemetry_tx: Sender<crate::Telemetry>, mut shutdown_rx: Recei
             const PIXEL_FORMAT_RGB: PixelFormat =
                 PixelFormat::new(u32::from_le_bytes([b'R', b'G', b'2', b'4']), 0);
 
+            let size = Size {
+                width: 800,
+                height: 600,
+            };
             cfgs.get_mut(0).unwrap().set_pixel_format(PIXEL_FORMAT_RGB);
+            cfgs.get_mut(0).unwrap().set_size(size);
+
             match cfgs.validate() {
                 CameraConfigurationStatus::Valid => info!("Camera configuration valid!"),
                 CameraConfigurationStatus::Adjusted => {
@@ -98,12 +105,12 @@ pub fn run_camera(telemetry_tx: Sender<crate::Telemetry>, mut shutdown_rx: Recei
             loop {
                 tokio::select! {
                     Some(mut req) = rx.recv() => {
-                        debug!("Camera request {:?} completed!", req);
-                        debug!("Metadata: {:#?}", req.metadata());
+                        trace!("Camera request {:?} completed!", req);
+                        trace!("Metadata: {:#?}", req.metadata());
 
                         let framebuffer: &MemoryMappedFrameBuffer<FrameBuffer> =
                             req.buffer(&stream).unwrap();
-                        debug!("FrameBuffer metadata: {:#?}", framebuffer.metadata());
+                        trace!("FrameBuffer metadata: {:#?}", framebuffer.metadata());
 
                         let planes = framebuffer.data();
                         let rgb_data = planes.first().unwrap();

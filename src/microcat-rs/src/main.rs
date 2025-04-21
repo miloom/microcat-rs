@@ -150,10 +150,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let file_appender = rolling::daily(log_path, "microcat_log");
     let (non_blocking, _guard) = tracing_appender::non_blocking(file_appender);
     println!("Starting logger");
-    tracing_subscriber::fmt()
-        .with_writer(non_blocking)
-        .with_max_level(tracing::Level::DEBUG)
-        .init();
+    tracing_subscriber::fmt().with_writer(non_blocking).init();
     info!("Starting microcat");
 
     let rgb = rgb::Rgb::init_leds()?;

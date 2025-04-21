@@ -17,7 +17,7 @@ sensor_msgs = { version = "*" }
 builtin_interfaces = { version = "*" }
 serde = { version = "^1.0", features = ["derive"] }
 microcat_msgs = { version = "0.1", features = ["serde"] }
-tracing = "0.1.41"
+tracing = { version = "0.1.41", features = ["release_max_level_info", "max_level_trace"] }
 tracing-subscriber = "0.3.19"
 tracing-appender = "0.2.3"
 # This fork and branch has fixes for cross compilation

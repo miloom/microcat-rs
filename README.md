@@ -132,6 +132,34 @@ colcon build --merge-install --packages-up-to microcat_rs
 The code is setup for running on the raspberry. While building is possible on other machines the code directly
 interfaces with the Raspberry PI hardware, which means other computers will fail to run it.
 
+### Setup
+
+1. Configure full uart
+   This will disable bluetooth
+   Add this line below any section following a `[all]` name  
+   `dtoverlay=disable-bt`
+2. Configure hardware PWM
+   We will need hardware PWM to run.
+   This will disable analog audio
+   Add this line below any section following a `[all]` name  
+   `dtoverlay=pwm-2chan,pin=18,pin2=13,func=2,func2=4`
+    * Set up udev rules for permission to access the PWM  
+      Create a file `/etc/udev/rules.d/99-pwm.rules` with following contents:
+      ```
+      SUBSYSTEM=="pwm*", PROGRAM="/bin/sh -c '\
+        chown -R root:gpio /sys/class/pwm && chmod -R 770 /sys/class/pwm;\
+        chown -R root:gpio /sys/devices/platform/soc/*.pwm/pwm/pwmchip* && chmod -R 770 /sys/devices/platform/soc/*.pwm/pwm/pwmchip*\
+      '"
+      ```
+    * Reload the udev rules:
+      ```bash
+      sudo udevadm control --reload-rules
+      sudo udevadm trigger
+      ```
+
+3.
+
+
 1. Copy the built files over to the raspberry
     - Archive the 'install' directory
     ```bash

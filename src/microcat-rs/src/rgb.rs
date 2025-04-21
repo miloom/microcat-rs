@@ -58,10 +58,8 @@ impl Rgb {
             Led::Pwm(pwm) => {
                 if let Err(error) = pwm.set_duty_cycle(value as f64) {
                     error!("Failed to set duty cycle for {name} LED: {error}");
-                } else {
-                    if let Err(error) = pwm.enable() {
-                        error!("Failed to enable duty cycle for {name} LED: {error}");
-                    }
+                } else if let Err(error) = pwm.enable() {
+                    error!("Failed to enable duty cycle for {name} LED: {error}");
                 }
             }
         }

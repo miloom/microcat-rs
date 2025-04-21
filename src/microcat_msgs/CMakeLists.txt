@@ -19,6 +19,7 @@ set(msg_files
   "msg/ToneDetector.msg"
   "msg/PressureData.msg"
   "msg/Led.msg"
+  "msg/Battery.msg"
 )
 
 rosidl_generate_interfaces(${PROJECT_NAME}

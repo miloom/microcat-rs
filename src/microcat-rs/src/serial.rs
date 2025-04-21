@@ -1,5 +1,7 @@
 #![allow(unused_imports)]
+use crate::serial::message::message::Data;
 use crate::Telemetry;
+use crate::Telemetry::BatteryVoltage;
 use bytes::BytesMut;
 use prost::Message;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
@@ -123,6 +125,13 @@ pub async fn read(
                                 .send(Telemetry::PressureData(microcat_msgs::msg::PressureData {
                                     pressure: msg.pressure as f32 / 100.0,
                                     temperature: msg.temperature as f32 / 100.0,
+                                }))
+                                .await;
+                        }
+                        Some(Data::BatterVoltage(voltage)) => {
+                            let _ = tx
+                                .send(BatteryVoltage(microcat_msgs::msg::Battery {
+                                    battery_voltage: voltage,
                                 }))
                                 .await;
                         }

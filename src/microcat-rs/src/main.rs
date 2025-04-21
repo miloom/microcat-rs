@@ -26,6 +26,7 @@ struct MicrocatNode {
     tone_detector_publisher: Arc<rclrs::Publisher<microcat_msgs::msg::ToneDetector>>,
     pressure_data_publisher: Arc<rclrs::Publisher<microcat_msgs::msg::PressureData>>,
     camera_image_publisher: Arc<rclrs::Publisher<sensor_msgs::msg::Image>>,
+    battery_data_publisher: Arc<rclrs::Publisher<microcat_msgs::msg::Battery>>,
     rx: Receiver<Telemetry>,
 }
 
@@ -92,6 +93,7 @@ impl MicrocatNode {
         let tone_detector_publisher = node.create_publisher("tone_detector")?;
         let pressure_data_publisher = node.create_publisher("pressure_data")?;
         let camera_image_publisher = node.create_publisher("camera_image")?;
+        let battery_data_publisher = node.create_publisher("battery_data")?;
         Ok(Self {
             _node: node,
             _motor_control_subscription,
@@ -102,6 +104,7 @@ impl MicrocatNode {
             tone_detector_publisher,
             pressure_data_publisher,
             camera_image_publisher,
+            battery_data_publisher,
         })
     }
 
@@ -129,6 +132,10 @@ impl MicrocatNode {
                     trace!("Sending camera_data msg");
                     let _ = self.camera_image_publisher.publish(image);
                 }
+                Telemetry::BatteryVoltage(battery_data) => {
+                    trace!("Sending battery_voltage msg {battery_data:?}");
+                    let _ = self.battery_data_publisher.publish(battery_data);
+                }
             }
         }
     }
@@ -140,6 +147,7 @@ enum Telemetry {
     ToneDetector(microcat_msgs::msg::ToneDetector),
     PressureData(microcat_msgs::msg::PressureData),
     CameraData(sensor_msgs::msg::Image),
+    BatteryVoltage(microcat_msgs::msg::Battery),
 }
 
 #[tokio::main]

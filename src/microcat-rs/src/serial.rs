@@ -9,11 +9,16 @@ use tokio::sync::mpsc::Sender;
 use tokio_serial::SerialStream;
 use tracing::{debug, error, trace};
 
+#[rustfmt::skip]
 mod imu;
 #[allow(clippy::all, clippy::nursery, clippy::pedantic)]
+#[rustfmt::skip]
 mod message;
+#[rustfmt::skip]
 mod motor;
+#[rustfmt::skip]
 mod pressure;
+#[rustfmt::skip]
 mod tone_detector;
 
 #[tracing::instrument(level = "trace", skip(serial, tx))]

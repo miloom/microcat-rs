@@ -6,6 +6,9 @@ jobs:
     runs-on: [ self-hosted, linux, arm64 ]
     env:
       CARGO_TERM_COLOR: always
+    outputs:
+      build-status: ${{ steps.build.outcome }}
+      lint-status: ${{ steps.lint.outcome }}
     steps:
       - run: echo "The job was automatically triggered by a ${{ github.event_name }} event."
       - name: Check out repository code
@@ -20,28 +23,27 @@ jobs:
         uses: Swatinem/rust-cache@v2
         with:
           workspaces: ./src/microcat-rs -> ../../build/microcat_rs
-      - name: Build
+      - name: build
         run: source /opt/ros/humble/setup.bash && echo ${AMENT_PREFIX_PATH} && colcon build --packages-up-to microcat_rs --merge-install
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: microcat
           path: install
-
-  Lint-code:
-    runs-on: [ self-hosted. linux, arm64 ]
-    needs: [ Build-code ]
-    env:
-      CARGO_TERM_COLOR: always
-    steps:
-      - run: echo "The job was automatically triggered by a ${{ github.event_name }} event."
-      - name: Check out repository code
-        uses: actions/checkout@v4
-        with:
-          submodules: 'true'
-      - name: Setup for ROS2 Humble
-        run: vcs import src < src/ros2_rust/ros2_rust_humble.repos
-      - name: Install Rust
-        run: curl https://sh.rustup.rs -sSf | sh -s -- -y
-      - name: Clippy
+      - name: lint
         run: cd src/microcat-rs && cargo clippy
+
+      - name: Save status JSON
+        if: always()
+        run: |
+          mkdir -p badges
+          echo '{ "schemaVersion": 1, "label": "Build", "message": "'$(cat build.status)'", "color": "'$(cat build.status | grep -q success && echo green || echo red)'" }' > badges/build.json
+          echo '{ "schemaVersion": 1, "label": "Lint", "message": "'$(cat lint.status)'", "color": "'$(cat lint.status | grep -q success && echo green || echo red)'" }' > badges/lint.json
+
+      - name: Deploy to gh-pages
+        if: always()
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./badges
+          publish_branch: gh-pages

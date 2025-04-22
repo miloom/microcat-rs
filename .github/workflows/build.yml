@@ -27,10 +27,8 @@ jobs:
         with:
           name: microcat
           path: install
-      - name: Source ROS2
-        run: source /opt/ros/humble/setup.bash
       - name: lint
-        run: cd src/microcat-rs && cargo clippy && echo "success" > ../../lint.status && cd ../..
+        run: cd src/microcat-rs && source /opt/ros/humble/setup.bash && cargo clippy && echo "success" > ../../lint.status && cd ../..
 
       - name: Save status JSON
         if: always()

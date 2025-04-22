@@ -56,7 +56,7 @@ rosidl_runtime_rs and rosidl_generator_rs do not end with *(ros.ament_cargo)*
    These dependencies are used by some packages in Cargo.toml
 
 ```bash
-sudo apt install libudev-dev -y
+sudo apt install libudev-dev clang -y
 ```
 
 6. LibCamera setup

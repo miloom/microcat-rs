@@ -6,9 +6,6 @@ jobs:
     runs-on: [ self-hosted, linux, arm64 ]
     env:
       CARGO_TERM_COLOR: always
-    outputs:
-      build-status: ${{ steps.build.outcome }}
-      lint-status: ${{ steps.lint.outcome }}
     steps:
       - run: echo "The job was automatically triggered by a ${{ github.event_name }} event."
       - name: Check out repository code
@@ -24,14 +21,14 @@ jobs:
         with:
           workspaces: ./src/microcat-rs -> ../../build/microcat_rs
       - name: build
-        run: source /opt/ros/humble/setup.bash && echo ${AMENT_PREFIX_PATH} && colcon build --packages-up-to microcat_rs --merge-install
+        run: source /opt/ros/humble/setup.bash && echo ${AMENT_PREFIX_PATH} && colcon build --packages-up-to microcat_rs --merge-install && echo "success" > build.status
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: microcat
           path: install
       - name: lint
-        run: cd src/microcat-rs && cargo clippy
+        run: cd src/microcat-rs && cargo clippy && echo "success" > ../../lint.status && cd ../..
 
       - name: Save status JSON
         if: always()

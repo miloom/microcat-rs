@@ -31,7 +31,7 @@ jobs:
         run: cd src/microcat-rs && source /opt/ros/humble/setup.bash && cargo clippy && echo "success" > ../../lint.status && cd ../..
 
       - name: format
-        run: cd src/microcat-rs && source /opt/ros/humble/setup.bas && cargo fmt --check && echo "success" > ../../fmt.status && cd ../..
+        run: cd src/microcat-rs && source /opt/ros/humble/setup.bash && cargo fmt --check && echo "success" > ../../fmt.status && cd ../..
 
       - name: Save status JSON
         if: always()

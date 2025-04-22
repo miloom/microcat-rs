@@ -1,4 +1,6 @@
-![build](https://github.com/miloom/microcat-rs/actions/workflows/build.yml/badge.svg) ![lint](https://github.com/miloom/microcat-rs/actions/workflows/lint.yml/badge.svg) ![format](https://github.com/miloom/microcat-rs/actions/workflows/format.yml/badge.svg)
+![Build](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fmiloom%2Fmicrocat-rs%2Fgh-pages%2Fbuild.json)
+![Lint](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fmiloom%2Fmicrocat-rs%2Fgh-pages%2Flint.json)
+![Format](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fmiloom%2Fmicrocat-rs%2Fgh-pages%2Ffmt.json)
 
 microcat-rs
 ===========

@@ -30,12 +30,16 @@ jobs:
       - name: lint
         run: cd src/microcat-rs && source /opt/ros/humble/setup.bash && cargo clippy && echo "success" > ../../lint.status && cd ../..
 
+      - name: format
+        run: cd src/microcat-rs && source /opt/ros/humble/setup.bas && cargo fmt --check && echo "success" > ../../fmt.status && cd ../..
+
       - name: Save status JSON
         if: always()
         run: |
           mkdir -p badges
           echo '{ "schemaVersion": 1, "label": "Build", "message": "'$(cat build.status)'", "color": "'$(cat build.status | grep -q success && echo green || echo red)'" }' > badges/build.json
           echo '{ "schemaVersion": 1, "label": "Lint", "message": "'$(cat lint.status)'", "color": "'$(cat lint.status | grep -q success && echo green || echo red)'" }' > badges/lint.json
+          echo '{ "schemaVersion": 1, "label": "Format", "message": "'$(cat fmt.status)'", "color": "'$(cat fmt.status | grep -q success && echo green || echo red)'" }' > badges/fmt.json
 
       - name: Deploy to gh-pages
         if: always()

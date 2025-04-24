@@ -8,7 +8,7 @@ use std::sync::Arc;
 use tokio::sync::mpsc;
 use tokio::sync::mpsc::{Receiver, Sender};
 use tokio_serial::SerialPortBuilderExt;
-use tracing::{error, info, span, trace};
+use tracing::{debug, error, info, span, trace};
 use tracing_appender::rolling;
 
 mod camera;
@@ -199,7 +199,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
         })
     };
 
+    debug!("Acquiring GPIO");
     let gpio = Gpio::new()?;
+    info!("Setting up UART mux");
     #[cfg(feature = "v21-hardware")]
     let (_, _) = {
         // Setting pins 19 and 26 will configure the MUX to connect arduino to rpi

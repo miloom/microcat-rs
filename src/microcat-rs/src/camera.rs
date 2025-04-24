@@ -15,6 +15,7 @@ use tokio::sync::watch::Receiver;
 use tracing::{debug, info, trace};
 
 pub fn run_camera(telemetry_tx: Sender<crate::Telemetry>, mut shutdown_rx: Receiver<bool>) {
+    info!("Starting camera task");
     std::thread::spawn(move || {
         let rt = tokio::runtime::Builder::new_current_thread()
             .enable_all()
@@ -23,6 +24,7 @@ pub fn run_camera(telemetry_tx: Sender<crate::Telemetry>, mut shutdown_rx: Recei
         rt.block_on(async move {
             let manager = libcamera::camera_manager::CameraManager::new().unwrap();
             let cams = manager.cameras();
+            debug!("Got camera list");
             let cam = cams.get(0).expect("No camera found");
             info!(
                 "Using camera {}",

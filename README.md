@@ -140,7 +140,18 @@ interfaces with the Raspberry PI hardware, which means other computers will fail
    This will disable bluetooth
    Add this line below any section following a `[all]` name  
    `dtoverlay=disable-bt`
-2. Configure hardware PWM
+2. Disable console for uart
+   ```bash
+   sudo systemctl stop serial-getty@ttyS0.service
+   sudo systemctl disable serial-getty@ttyS0.service
+   sudo systemctl mask serial-getty@ttyS0.service
+   ```
+3. Add user to tty group
+   ```bash
+   sudo adduser $USER tty
+   ```
+4. Remove `console=serial0,115200` from `/boot/firmware/cmdline.txt`
+5. Configure hardware PWM
    We will need hardware PWM to run.
    This will disable analog audio
    Add this line below any section following a `[all]` name  
@@ -151,15 +162,14 @@ interfaces with the Raspberry PI hardware, which means other computers will fail
       SUBSYSTEM=="pwm*", PROGRAM="/bin/sh -c '\
         chown -R root:gpio /sys/class/pwm && chmod -R 770 /sys/class/pwm;\
         chown -R root:gpio /sys/devices/platform/soc/*.pwm/pwm/pwmchip* && chmod -R 770 /sys/devices/platform/soc/*.pwm/pwm/pwmchip*\
-      '"
+        '"
       ```
     * Reload the udev rules:
       ```bash
       sudo udevadm control --reload-rules
       sudo udevadm trigger
       ```
-
-3.
+6. Reboot
 
 
 1. Copy the built files over to the raspberry

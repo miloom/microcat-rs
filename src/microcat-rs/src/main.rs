@@ -234,7 +234,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 .open_native_async()
                 .expect("Failed to open serial port");
 
-            println!("{:?}", serial);
+            info!("{:?}", serial);
 
             loop {
                 tokio::select! {

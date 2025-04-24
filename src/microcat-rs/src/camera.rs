@@ -50,8 +50,8 @@ pub fn run_camera(telemetry_tx: Sender<crate::Telemetry>, mut shutdown_rx: Recei
                 PixelFormat::new(u32::from_le_bytes([b'R', b'G', b'2', b'4']), 0);
 
             let size = Size {
-                width: 800,
-                height: 600,
+                width: 480,
+                height: 320,
             };
             cfgs.get_mut(0).unwrap().set_pixel_format(PIXEL_FORMAT_RGB);
             cfgs.get_mut(0).unwrap().set_size(size);

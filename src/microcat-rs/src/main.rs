@@ -3,6 +3,7 @@ use crate::serial::MotorPos;
 use bytes::BytesMut;
 use rclrs::{
     CreateBasicExecutor, PublisherOptions, QoSHistoryPolicy, QoSProfile, QoSReliabilityPolicy,
+    QOS_PROFILE_SENSOR_DATA,
 };
 use rppal::gpio::Gpio;
 use std::error::Error;
@@ -96,11 +97,7 @@ impl MicrocatNode {
         let tone_detector_publisher = node.create_publisher("tone_detector")?;
         let pressure_data_publisher = node.create_publisher("pressure_data")?;
         let mut options = PublisherOptions::new("camera_image");
-        options.qos = QoSProfile {
-            reliability: QoSReliabilityPolicy::BestEffort,
-            history: QoSHistoryPolicy::KeepLast { depth: 1 },
-            ..Default::default()
-        };
+        options.qos = QOS_PROFILE_SENSOR_DATA;
         let camera_image_publisher = node.create_publisher(options)?;
         let battery_data_publisher = node.create_publisher("battery_data")?;
         Ok(Self {

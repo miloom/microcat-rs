@@ -1,4 +1,4 @@
-name: Build code
+name: Build V21 code
 run-name: ${{ github.actor }} is building
 on: [ push ]
 jobs:

@@ -1,7 +1,9 @@
 use crate::rgb::Rgb;
 use crate::serial::MotorPos;
 use bytes::BytesMut;
-use rclrs::{CreateBasicExecutor, PublisherOptions, QoSHistoryPolicy, QoSProfile, QoSReliabilityPolicy};
+use rclrs::{
+    CreateBasicExecutor, PublisherOptions, QoSHistoryPolicy, QoSProfile, QoSReliabilityPolicy,
+};
 use rppal::gpio::Gpio;
 use std::error::Error;
 use std::sync::Arc;
@@ -10,6 +12,7 @@ use tokio::sync::mpsc::{Receiver, Sender};
 use tokio_serial::SerialPortBuilderExt;
 use tracing::{debug, error, info, span, trace};
 use tracing_appender::rolling;
+use tracing_subscriber::EnvFilter;
 
 mod camera;
 #[allow(dead_code)]
@@ -95,7 +98,7 @@ impl MicrocatNode {
         let mut options = PublisherOptions::new("camera_image");
         options.qos = QoSProfile {
             reliability: QoSReliabilityPolicy::BestEffort,
-            history: QoSHistoryPolicy::KeepLast {depth: 1},
+            history: QoSHistoryPolicy::KeepLast { depth: 1 },
             ..Default::default()
         };
         let camera_image_publisher = node.create_publisher(options)?;
@@ -164,7 +167,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let file_appender = rolling::daily(log_path, "microcat_log");
     let (non_blocking, _guard) = tracing_appender::non_blocking(file_appender);
     println!("Starting logger");
-    tracing_subscriber::fmt().with_writer(non_blocking).init();
+    tracing_subscriber::fmt()
+        .with_writer(non_blocking)
+        .with_env_filter(EnvFilter::from_default_env())
+        .init();
     info!("Starting microcat");
 
     let rgb = rgb::Rgb::init_leds()?;

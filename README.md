@@ -45,6 +45,11 @@ sudo apt install -y git libclang-dev python3-pip python3-vcstool
 cargo install cargo-ament-build
 pip install git+https://github.com/colcon/colcon-cargo.git
 pip install git+https://github.com/colcon/colcon-ros-cargo.git
+```
+
+5. On the first build set up ROS2 repositories
+
+```bash
 vcs import src < src/ros2_rust/ros2_rust_humble.repos
 ```
 
@@ -54,14 +59,14 @@ Testing with pipx showed that it fails to install the packages correctly which c
 To see if the packages have been installed correctly you can run ```colcon list``` and verify that the packages
 rosidl_runtime_rs and rosidl_generator_rs do not end with *(ros.ament_cargo)*
 
-5. Install extra dependencies to build
+6. Install extra dependencies to build
    These dependencies are used by some packages in Cargo.toml
 
 ```bash
 sudo apt install libudev-dev clang libstdc++-12-dev -y
 ```
 
-6. LibCamera setup
+## Building Libcamera
 
 We will be cross compiling libcamera because RPI is quite weak and development PC is most likely more powerful.
 

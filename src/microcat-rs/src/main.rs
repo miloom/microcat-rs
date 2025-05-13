@@ -119,6 +119,7 @@ impl MicrocatNode {
 
     #[tracing::instrument(level = "trace", skip(self))]
     async fn write(&mut self) {
+        trace!("{} messages in queue", self.rx.len());
         while let Some(msg) = self.rx.recv().await {
             match msg {
                 Telemetry::MotorPosition(position) => {

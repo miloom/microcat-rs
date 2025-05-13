@@ -28,7 +28,7 @@ jobs:
           name: microcat_v21
           path: install
       - name: lint
-        run: cd src/microcat-rs && source /opt/ros/humble/setup.bash && cargo clippy && echo "success" > ../../lint.status && cd ../..
+        run: cd src/microcat-rs && source /opt/ros/humble/setup.bash && cargo clippy -Fv21_hardware && echo "success" > ../../lint.status && cd ../..
 
       - name: format
         run: cd src/microcat-rs && source /opt/ros/humble/setup.bash && cargo fmt --check && echo "success" > ../../fmt.status && cd ../..

@@ -21,7 +21,10 @@ fn main() {
     callbacks.credentials(|_url, username_from_url, _allowed_types| {
         Cred::ssh_key(
             username_from_url.unwrap(),
-            None,
+            Some(Path::new(&format!(
+                "{}/.ssh/id_ed25519.pub",
+                env::var("HOME").unwrap()
+            ))),
             Path::new(&format!("{}/.ssh/id_ed25519", env::var("HOME").unwrap())),
             None,
         )

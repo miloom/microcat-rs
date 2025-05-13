@@ -107,12 +107,12 @@ pub fn run_camera(telemetry_tx: Sender<crate::Telemetry>, mut shutdown_rx: Recei
             loop {
                 tokio::select! {
                     Some(mut req) = rx.recv() => {
-                        trace!("Camera request {:?} completed!", req);
-                        trace!("Metadata: {:#?}", req.metadata());
+                        // trace!("Camera request {:?} completed!", req);
+                        // trace!("Metadata: {:#?}", req.metadata());
 
                         let framebuffer: &MemoryMappedFrameBuffer<FrameBuffer> =
                             req.buffer(&stream).unwrap();
-                        trace!("FrameBuffer metadata: {:#?}", framebuffer.metadata());
+                        // trace!("FrameBuffer metadata: {:#?}", framebuffer.metadata());
 
                         let planes = framebuffer.data();
                         let rgb_data = planes.first().unwrap();

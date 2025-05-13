@@ -24,7 +24,7 @@ microcat_msgs = { version = "0.1", features = ["serde"] }
 tracing = { version = "0.1.41", features = ["release_max_level_info", "max_level_trace"] }
 tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
 tracing-appender = "0.2.3"
-# This fork and branch has fixes for cross compilation
+# This fork and branch has fixes for cross-compilation
 libcamera = { git = "https://github.com/fishrockz/libcamera-rs.git", branch = "willsalmon/get-libcamera-version" }
 
 

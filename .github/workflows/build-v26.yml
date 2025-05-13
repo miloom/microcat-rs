@@ -25,10 +25,10 @@ jobs:
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: microcat_v21
+          name: microcat_v26
           path: install
       - name: lint
-        run: cd src/microcat-rs && source /opt/ros/humble/setup.bash && cargo clippy && echo "success" > ../../lint.status && cd ../..
+        run: cd src/microcat-rs && source /opt/ros/humble/setup.bash && cargo clippy -Fv26_hardware && echo "success" > ../../lint.status && cd ../..
 
       - name: format
         run: cd src/microcat-rs && source /opt/ros/humble/setup.bash && cargo fmt --check && echo "success" > ../../fmt.status && cd ../..

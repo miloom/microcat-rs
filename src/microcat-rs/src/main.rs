@@ -92,14 +92,24 @@ impl MicrocatNode {
                 );
             })?;
 
-        let motor_status_publisher = node.create_publisher("motor_status")?;
-        let imu_publisher = node.create_publisher("imu")?;
-        let tone_detector_publisher = node.create_publisher("tone_detector")?;
-        let pressure_data_publisher = node.create_publisher("pressure_data")?;
+        let mut options = PublisherOptions::new("motor_status");
+        options.qos = QOS_PROFILE_SENSOR_DATA;
+        let motor_status_publisher = node.create_publisher(options)?;
+        let mut options = PublisherOptions::new("imu");
+        options.qos = QOS_PROFILE_SENSOR_DATA;
+        let imu_publisher = node.create_publisher(options)?;
+        let mut options = PublisherOptions::new("tone_detector");
+        options.qos = QOS_PROFILE_SENSOR_DATA;
+        let tone_detector_publisher = node.create_publisher(options)?;
+        let mut options = PublisherOptions::new("pressure_data");
+        options.qos = QOS_PROFILE_SENSOR_DATA;
+        let pressure_data_publisher = node.create_publisher(options)?;
         let mut options = PublisherOptions::new("camera_image");
         options.qos = QOS_PROFILE_SENSOR_DATA;
         let camera_image_publisher = node.create_publisher(options)?;
-        let battery_data_publisher = node.create_publisher("battery_data")?;
+        let mut options = PublisherOptions::new("battery_data");
+        options.qos = QOS_PROFILE_SENSOR_DATA;
+        let battery_data_publisher = node.create_publisher(options)?;
         Ok(Self {
             _node: node,
             _motor_control_subscription,

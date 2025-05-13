@@ -202,7 +202,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     debug!("Acquiring GPIO");
     let gpio = Gpio::new()?;
     info!("Setting up UART mux");
-    #[cfg(feature = "v21-hardware")]
+    #[cfg(feature = "v21_hardware")]
     let (_, _) = {
         // Setting pins 19 and 26 will configure the MUX to connect arduino to rpi
         let mut mux_a = gpio.get(19)?.into_output();
@@ -212,7 +212,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         (mux_a, mux_b)
     };
 
-    #[cfg(feature = "v26-hardware")]
+    #[cfg(feature = "v26_hardware")]
     let (_, _, _) = {
         let mut mux_enable_pin = gpio.get(22)?.into_output();
         mux_enable_pin.set_high(); // Disable mux to configure

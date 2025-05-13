@@ -58,7 +58,7 @@ rosidl_runtime_rs and rosidl_generator_rs do not end with *(ros.ament_cargo)*
    These dependencies are used by some packages in Cargo.toml
 
 ```bash
-sudo apt install libudev-dev clang -y
+sudo apt install libudev-dev clang libstdc++-12-dev -y
 ```
 
 6. LibCamera setup
@@ -109,7 +109,6 @@ We will be cross compiling libcamera because RPI is quite weak and development P
    meson setup cross-build --cross-file aarch64_cross.txt --buildtype=release
    ninja -C cross-build 
    ```
-8.
 
 ## Build Instructions
 

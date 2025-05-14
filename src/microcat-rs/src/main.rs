@@ -137,10 +137,10 @@ impl MicrocatNode {
                 );
             })?;
 
-        let fl_motor_status_publisher = node.create_publisher("motor/status/front_left")?;
-        let fr_motor_status_publisher = node.create_publisher("motor/status/front_right")?;
-        let rl_motor_status_publisher = node.create_publisher("motor/status/rear_left")?;
-        let rr_motor_status_publisher = node.create_publisher("motor/status/rear_right")?;
+        let fl_motor_status_publisher = node.create_publisher("motor/front_left/status")?;
+        let fr_motor_status_publisher = node.create_publisher("motor/front_right/status")?;
+        let rl_motor_status_publisher = node.create_publisher("motor/rear_left/status")?;
+        let rr_motor_status_publisher = node.create_publisher("motor/rear_right/status")?;
         let imu_publisher = node.create_publisher("imu/data")?;
         let left_tone_detector_publisher = node.create_publisher("tone_detector/left/data")?;
         let right_tone_detector_publisher = node.create_publisher("tone_detector/right/data")?;

@@ -52,8 +52,6 @@ impl MicrocatNode {
         let _fl_motor_control_subscription = node.create_subscription(
             "motor/front_left/control",
             move |msg: microcat_msgs::msg::MotorControl| {
-                let my_span = span!(tracing::Level::DEBUG, "motor_control");
-                let _enter = my_span.enter();
                 trace!("Received motor_control msg {msg:?}");
 
                 let command = serial::Command::MotorPosition(MotorPos {
@@ -71,8 +69,6 @@ impl MicrocatNode {
         let _fr_motor_control_subscription = node.create_subscription(
             "motor/front_right/control",
             move |msg: microcat_msgs::msg::MotorControl| {
-                let my_span = span!(tracing::Level::DEBUG, "motor_control");
-                let _enter = my_span.enter();
                 trace!("Received motor_control msg {msg:?}");
 
                 let command = serial::Command::MotorPosition(MotorPos {
@@ -90,8 +86,6 @@ impl MicrocatNode {
         let _rl_motor_control_subscription = node.create_subscription(
             "motor/rear_left/control",
             move |msg: microcat_msgs::msg::MotorControl| {
-                let my_span = span!(tracing::Level::DEBUG, "motor_control");
-                let _enter = my_span.enter();
                 trace!("Received motor_control msg {msg:?}");
 
                 let command = serial::Command::MotorPosition(MotorPos {
@@ -109,8 +103,6 @@ impl MicrocatNode {
         let _rr_motor_control_subscription = node.create_subscription(
             "motor/rear_right/control",
             move |msg: microcat_msgs::msg::MotorControl| {
-                let my_span = span!(tracing::Level::DEBUG, "motor_control");
-                let _enter = my_span.enter();
                 debug!("Received motor_control msg {msg:?}");
 
                 let command = serial::Command::MotorPosition(MotorPos {
@@ -127,8 +119,6 @@ impl MicrocatNode {
 
         let _rgb_subscription =
             node.create_subscription("rgb_led", move |msg: microcat_msgs::msg::Led| {
-                let my_span = span!(tracing::Level::INFO, "rgb control");
-                let _enter = my_span.enter();
                 debug!("Received rgb_led msg {msg:?}");
                 rgb.set_color(
                     msg.red.clamp(0.0, 100.0),

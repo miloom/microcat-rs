@@ -1,5 +1,5 @@
 use crate::rgb::Rgb;
-use crate::serial::MotorPos;
+use crate::serial::{MotorLocation, MotorPos};
 use bytes::BytesMut;
 use rclrs::CreateBasicExecutor;
 use rppal::gpio::Gpio;
@@ -20,7 +20,10 @@ mod serial;
 
 struct MicrocatNode {
     _node: Arc<rclrs::Node>,
-    _motor_control_subscription: Arc<rclrs::Subscription<microcat_msgs::msg::MotorControl>>,
+    _fl_motor_control_subscription: Arc<rclrs::Subscription<microcat_msgs::msg::MotorControl>>,
+    _fr_motor_control_subscription: Arc<rclrs::Subscription<microcat_msgs::msg::MotorControl>>,
+    _rl_motor_control_subscription: Arc<rclrs::Subscription<microcat_msgs::msg::MotorControl>>,
+    _rr_motor_control_subscription: Arc<rclrs::Subscription<microcat_msgs::msg::MotorControl>>,
     _rgb_subscription: Arc<rclrs::Subscription<microcat_msgs::msg::Led>>,
     fl_motor_status_publisher: Arc<rclrs::Publisher<microcat_msgs::msg::MotorStatus>>,
     fr_motor_status_publisher: Arc<rclrs::Publisher<microcat_msgs::msg::MotorStatus>>,
@@ -45,37 +48,78 @@ impl MicrocatNode {
         info!("Creating microcat node");
         let node = executor.create_node("microcat")?;
 
-        let _motor_control_subscription = node.create_subscription(
-            "motor_control",
+        let tx_clone = tx.clone();
+        let _fl_motor_control_subscription = node.create_subscription(
+            "motor/front_left/control",
             move |msg: microcat_msgs::msg::MotorControl| {
-                let my_span = span!(tracing::Level::INFO, "motor_control");
+                let my_span = span!(tracing::Level::DEBUG, "motor_control");
                 let _enter = my_span.enter();
                 trace!("Received motor_control msg {msg:?}");
 
                 let command = serial::Command::MotorPosition(MotorPos {
-                    location: match msg.location {
-                        microcat_msgs::msg::MotorControl::FRONT_LEFT => {
-                            serial::MotorLocation::FrontLeft
-                        }
-                        microcat_msgs::msg::MotorControl::FRONT_RIGHT => {
-                            serial::MotorLocation::FrontRight
-                        }
-                        microcat_msgs::msg::MotorControl::REAR_LEFT => {
-                            serial::MotorLocation::RearLeft
-                        }
-                        microcat_msgs::msg::MotorControl::REAR_RIGHT => {
-                            serial::MotorLocation::RearRight
-                        }
-                        _ => {
-                            // We will not panic since the sender might send invalid data
-                            return;
-                        }
-                    },
+                    location: MotorLocation::FrontLeft,
                     target_position: msg.position,
                     frequency: msg.frequency,
                     amplitude: msg.amplitude,
                 });
-                if let Err(error) = tx.try_send(command) {
+                if let Err(error) = tx_clone.try_send(command) {
+                    error!("Failed to send command {error:?}");
+                }
+            },
+        )?;
+        let tx_clone = tx.clone();
+        let _fr_motor_control_subscription = node.create_subscription(
+            "motor/front_right/control",
+            move |msg: microcat_msgs::msg::MotorControl| {
+                let my_span = span!(tracing::Level::DEBUG, "motor_control");
+                let _enter = my_span.enter();
+                trace!("Received motor_control msg {msg:?}");
+
+                let command = serial::Command::MotorPosition(MotorPos {
+                    location: MotorLocation::FrontRight,
+                    target_position: msg.position,
+                    frequency: msg.frequency,
+                    amplitude: msg.amplitude,
+                });
+                if let Err(error) = tx_clone.try_send(command) {
+                    error!("Failed to send command {error:?}");
+                }
+            },
+        )?;
+        let tx_clone = tx.clone();
+        let _rl_motor_control_subscription = node.create_subscription(
+            "motor/rear_left/control",
+            move |msg: microcat_msgs::msg::MotorControl| {
+                let my_span = span!(tracing::Level::DEBUG, "motor_control");
+                let _enter = my_span.enter();
+                trace!("Received motor_control msg {msg:?}");
+
+                let command = serial::Command::MotorPosition(MotorPos {
+                    location: MotorLocation::RearLeft,
+                    target_position: msg.position,
+                    frequency: msg.frequency,
+                    amplitude: msg.amplitude,
+                });
+                if let Err(error) = tx_clone.try_send(command) {
+                    error!("Failed to send command {error:?}");
+                }
+            },
+        )?;
+        let tx_clone = tx.clone();
+        let _rr_motor_control_subscription = node.create_subscription(
+            "motor/rear_right/control",
+            move |msg: microcat_msgs::msg::MotorControl| {
+                let my_span = span!(tracing::Level::DEBUG, "motor_control");
+                let _enter = my_span.enter();
+                trace!("Received motor_control msg {msg:?}");
+
+                let command = serial::Command::MotorPosition(MotorPos {
+                    location: MotorLocation::RearRight,
+                    target_position: msg.position,
+                    frequency: msg.frequency,
+                    amplitude: msg.amplitude,
+                });
+                if let Err(error) = tx_clone.try_send(command) {
                     error!("Failed to send command {error:?}");
                 }
             },
@@ -105,7 +149,10 @@ impl MicrocatNode {
         let battery_data_publisher = node.create_publisher("battery/voltage")?;
         Ok(Self {
             _node: node,
-            _motor_control_subscription,
+            _fl_motor_control_subscription,
+            _fr_motor_control_subscription,
+            _rl_motor_control_subscription,
+            _rr_motor_control_subscription,
             _rgb_subscription,
             rx,
             fl_motor_status_publisher,

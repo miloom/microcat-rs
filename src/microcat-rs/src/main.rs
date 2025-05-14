@@ -111,7 +111,7 @@ impl MicrocatNode {
             move |msg: microcat_msgs::msg::MotorControl| {
                 let my_span = span!(tracing::Level::DEBUG, "motor_control");
                 let _enter = my_span.enter();
-                trace!("Received motor_control msg {msg:?}");
+                debug!("Received motor_control msg {msg:?}");
 
                 let command = serial::Command::MotorPosition(MotorPos {
                     location: MotorLocation::RearRight,
@@ -129,7 +129,7 @@ impl MicrocatNode {
             node.create_subscription("rgb_led", move |msg: microcat_msgs::msg::Led| {
                 let my_span = span!(tracing::Level::INFO, "rgb control");
                 let _enter = my_span.enter();
-                trace!("Received rgb_led msg {msg:?}");
+                debug!("Received rgb_led msg {msg:?}");
                 rgb.set_color(
                     msg.red.clamp(0.0, 100.0),
                     msg.green.clamp(0.0, 100.0),

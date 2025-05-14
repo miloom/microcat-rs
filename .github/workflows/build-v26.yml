@@ -22,7 +22,7 @@ jobs:
           path: build
           key: build-${{ runner.os }}-${{ runner.arch }}-${{ runner.name }}
       - name: build
-        run: source /opt/ros/humble/setup.bash && echo ${AMENT_PREFIX_PATH} && colcon build --packages-up-to microcat_rs --merge-install && cd src/microcat-rs && cargo ament-build --install-base ../../install -- -Fv26_hardware -r && cd ../.. && echo "success" > build.status
+        run: source /opt/ros/humble/setup.bash && echo ${AMENT_PREFIX_PATH} && colcon build --packages-up-to microcat_rs --merge-install && cd src/microcat-rs && cargo ament-build --install-base ../../install -- -Fv26_hardware && cd ../.. && echo "success" > build.status
       - name: Upload install
         uses: actions/upload-artifact@v4
         with:

@@ -1,7 +1,7 @@
 use crate::rgb::Rgb;
 use crate::serial::MotorPos;
 use bytes::BytesMut;
-use rclrs::{CreateBasicExecutor, PublisherOptions, QOS_PROFILE_DEFAULT, QOS_PROFILE_SENSOR_DATA};
+use rclrs::{CreateBasicExecutor, PublisherOptions, QOS_PROFILE_DEFAULT};
 use rppal::gpio::Gpio;
 use std::error::Error;
 use std::sync::Arc;
@@ -275,13 +275,21 @@ async fn main() -> Result<(), Box<dyn Error>> {
         })
     };
 
-    {
+    let camera_handle = {
         let camera_telemetry_tx = telemetry_tx.clone();
         let shutdown_rx = shutdown_rx.clone();
-        crate::camera::run_camera(camera_telemetry_tx, shutdown_rx)
+        camera::run_camera(camera_telemetry_tx, shutdown_rx)
     };
 
     let (_, _, _) = tokio::join!(serial_task, ros_task, shutdown_signal_task,);
+
+    tokio::task::spawn_blocking(move || {
+        camera_handle.join().expect("Failed to join camera task");
+    })
+    .await
+    .expect("Join task failed");
+
+    info!("Done!");
 
     Ok(())
 }

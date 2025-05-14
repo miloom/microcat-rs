@@ -1,10 +1,7 @@
 use crate::rgb::Rgb;
 use crate::serial::MotorPos;
 use bytes::BytesMut;
-use rclrs::{
-    CreateBasicExecutor, PublisherOptions, QoSHistoryPolicy, QoSProfile, QoSReliabilityPolicy,
-    QOS_PROFILE_SENSOR_DATA,
-};
+use rclrs::{CreateBasicExecutor, PublisherOptions, QOS_PROFILE_DEFAULT, QOS_PROFILE_SENSOR_DATA};
 use rppal::gpio::Gpio;
 use std::error::Error;
 use std::sync::Arc;
@@ -93,22 +90,22 @@ impl MicrocatNode {
             })?;
 
         let mut options = PublisherOptions::new("motor_status");
-        options.qos = QOS_PROFILE_SENSOR_DATA;
+        options.qos = QOS_PROFILE_DEFAULT;
         let motor_status_publisher = node.create_publisher(options)?;
-        let mut options = PublisherOptions::new("imu");
-        options.qos = QOS_PROFILE_SENSOR_DATA;
+        let mut options = PublisherOptions::new("imu/data");
+        options.qos = QOS_PROFILE_DEFAULT;
         let imu_publisher = node.create_publisher(options)?;
-        let mut options = PublisherOptions::new("tone_detector");
-        options.qos = QOS_PROFILE_SENSOR_DATA;
+        let mut options = PublisherOptions::new("tone_detector/data");
+        options.qos = QOS_PROFILE_DEFAULT;
         let tone_detector_publisher = node.create_publisher(options)?;
-        let mut options = PublisherOptions::new("pressure_data");
-        options.qos = QOS_PROFILE_SENSOR_DATA;
+        let mut options = PublisherOptions::new("pressure/data");
+        options.qos = QOS_PROFILE_DEFAULT;
         let pressure_data_publisher = node.create_publisher(options)?;
-        let mut options = PublisherOptions::new("camera_image");
+        let mut options = PublisherOptions::new("camera/image_raw");
         options.qos = QOS_PROFILE_SENSOR_DATA;
         let camera_image_publisher = node.create_publisher(options)?;
-        let mut options = PublisherOptions::new("battery_data");
-        options.qos = QOS_PROFILE_SENSOR_DATA;
+        let mut options = PublisherOptions::new("battery/voltage");
+        options.qos = QOS_PROFILE_DEFAULT;
         let battery_data_publisher = node.create_publisher(options)?;
         Ok(Self {
             _node: node,

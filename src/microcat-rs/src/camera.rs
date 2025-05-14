@@ -12,7 +12,7 @@ use libcamera::{
 };
 use tokio::sync::mpsc::Sender;
 use tokio::sync::watch::Receiver;
-use tracing::{debug, info, trace};
+use tracing::{debug, info};
 
 pub fn run_camera(telemetry_tx: Sender<crate::Telemetry>, mut shutdown_rx: Receiver<bool>) {
     info!("Starting camera task");
@@ -104,9 +104,13 @@ pub fn run_camera(telemetry_tx: Sender<crate::Telemetry>, mut shutdown_rx: Recei
             }
             let width = cfg.get_size().width as usize;
             let height = cfg.get_size().height as usize;
+            let mut next_run = tokio::time::Instant::now();
             loop {
                 tokio::select! {
                     Some(mut req) = rx.recv() => {
+                        while tokio::time::Instant::now() < next_run {
+                            core::hint::spin_loop();
+                        }
                         // trace!("Camera request {:?} completed!", req);
                         // trace!("Metadata: {:#?}", req.metadata());
 
@@ -145,6 +149,7 @@ pub fn run_camera(telemetry_tx: Sender<crate::Telemetry>, mut shutdown_rx: Recei
 
                         req.reuse(ReuseFlag::REUSE_BUFFERS);
                         cam.queue_request(req).unwrap();
+                        next_run += tokio::time::Duration::from_millis(300);
 
                     }
                     _ = shutdown_rx.changed() => {

@@ -102,7 +102,7 @@ impl MicrocatNode {
         options.qos = QOS_PROFILE_DEFAULT;
         let pressure_data_publisher = node.create_publisher(options)?;
         let mut options = PublisherOptions::new("camera/image_raw");
-        options.qos = QOS_PROFILE_SENSOR_DATA;
+        options.qos = QOS_PROFILE_DEFAULT;
         let camera_image_publisher = node.create_publisher(options)?;
         let mut options = PublisherOptions::new("battery/voltage");
         options.qos = QOS_PROFILE_DEFAULT;

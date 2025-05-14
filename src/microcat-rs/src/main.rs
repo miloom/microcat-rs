@@ -49,83 +49,89 @@ impl MicrocatNode {
         let node = executor.create_node("microcat")?;
 
         let tx_clone = tx.clone();
-        let _fl_motor_control_subscription = node.create_subscription(
-            "motor/front_left/control",
-            move |msg: microcat_msgs::msg::MotorControl| {
-                trace!("Received motor_control msg {msg:?}");
+        let _fl_motor_control_subscription = node
+            .create_subscription::<microcat_msgs::msg::MotorControl, _>(
+                "motor/front_left/control",
+                move |msg: microcat_msgs::msg::MotorControl| {
+                    trace!("Received motor_control msg {msg:?}");
 
-                let command = serial::Command::MotorPosition(MotorPos {
-                    location: MotorLocation::FrontLeft,
-                    target_position: msg.position,
-                    frequency: msg.frequency,
-                    amplitude: msg.amplitude,
-                });
-                if let Err(error) = tx_clone.try_send(command) {
-                    error!("Failed to send command {error:?}");
-                }
-            },
-        )?;
+                    let command = serial::Command::MotorPosition(MotorPos {
+                        location: MotorLocation::FrontLeft,
+                        target_position: msg.position,
+                        frequency: msg.frequency,
+                        amplitude: msg.amplitude,
+                    });
+                    if let Err(error) = tx_clone.try_send(command) {
+                        error!("Failed to send command {error:?}");
+                    }
+                },
+            )?;
         let tx_clone = tx.clone();
-        let _fr_motor_control_subscription = node.create_subscription(
-            "motor/front_right/control",
-            move |msg: microcat_msgs::msg::MotorControl| {
-                trace!("Received motor_control msg {msg:?}");
+        let _fr_motor_control_subscription = node
+            .create_subscription::<microcat_msgs::msg::MotorControl, _>(
+                "motor/front_right/control",
+                move |msg: microcat_msgs::msg::MotorControl| {
+                    trace!("Received motor_control msg {msg:?}");
 
-                let command = serial::Command::MotorPosition(MotorPos {
-                    location: MotorLocation::FrontRight,
-                    target_position: msg.position,
-                    frequency: msg.frequency,
-                    amplitude: msg.amplitude,
-                });
-                if let Err(error) = tx_clone.try_send(command) {
-                    error!("Failed to send command {error:?}");
-                }
-            },
-        )?;
+                    let command = serial::Command::MotorPosition(MotorPos {
+                        location: MotorLocation::FrontRight,
+                        target_position: msg.position,
+                        frequency: msg.frequency,
+                        amplitude: msg.amplitude,
+                    });
+                    if let Err(error) = tx_clone.try_send(command) {
+                        error!("Failed to send command {error:?}");
+                    }
+                },
+            )?;
         let tx_clone = tx.clone();
-        let _rl_motor_control_subscription = node.create_subscription(
-            "motor/rear_left/control",
-            move |msg: microcat_msgs::msg::MotorControl| {
-                trace!("Received motor_control msg {msg:?}");
+        let _rl_motor_control_subscription = node
+            .create_subscription::<microcat_msgs::msg::MotorControl, _>(
+                "motor/rear_left/control",
+                move |msg: microcat_msgs::msg::MotorControl| {
+                    trace!("Received motor_control msg {msg:?}");
 
-                let command = serial::Command::MotorPosition(MotorPos {
-                    location: MotorLocation::RearLeft,
-                    target_position: msg.position,
-                    frequency: msg.frequency,
-                    amplitude: msg.amplitude,
-                });
-                if let Err(error) = tx_clone.try_send(command) {
-                    error!("Failed to send command {error:?}");
-                }
-            },
-        )?;
+                    let command = serial::Command::MotorPosition(MotorPos {
+                        location: MotorLocation::RearLeft,
+                        target_position: msg.position,
+                        frequency: msg.frequency,
+                        amplitude: msg.amplitude,
+                    });
+                    if let Err(error) = tx_clone.try_send(command) {
+                        error!("Failed to send command {error:?}");
+                    }
+                },
+            )?;
         let tx_clone = tx.clone();
-        let _rr_motor_control_subscription = node.create_subscription(
-            "motor/rear_right/control",
-            move |msg: microcat_msgs::msg::MotorControl| {
-                debug!("Received motor_control msg {msg:?}");
+        let _rr_motor_control_subscription = node
+            .create_subscription::<microcat_msgs::msg::MotorControl, _>(
+                "motor/rear_right/control",
+                move |msg: microcat_msgs::msg::MotorControl| {
+                    debug!("Received motor_control msg {msg:?}");
 
-                let command = serial::Command::MotorPosition(MotorPos {
-                    location: MotorLocation::RearRight,
-                    target_position: msg.position,
-                    frequency: msg.frequency,
-                    amplitude: msg.amplitude,
-                });
-                if let Err(error) = tx_clone.try_send(command) {
-                    error!("Failed to send command {error:?}");
-                }
-            },
-        )?;
+                    let command = serial::Command::MotorPosition(MotorPos {
+                        location: MotorLocation::RearRight,
+                        target_position: msg.position,
+                        frequency: msg.frequency,
+                        amplitude: msg.amplitude,
+                    });
+                    if let Err(error) = tx_clone.try_send(command) {
+                        error!("Failed to send command {error:?}");
+                    }
+                },
+            )?;
 
-        let _rgb_subscription =
-            node.create_subscription("rgb_led", move |msg: microcat_msgs::msg::Led| {
+        let _rgb_subscription = node.create_subscription::<microcat_msgs::msg::Led, _>(
+            "rgb_led",
+            move |msg: microcat_msgs::msg::Led| {
                 debug!("Received rgb_led msg {msg:?}");
                 rgb.set_color(
                     msg.red.clamp(0.0, 100.0),
                     msg.green.clamp(0.0, 100.0),
                     msg.blue.clamp(0.0, 100.0),
                 );
-            })?;
+            },
+        )?;
 
         let fl_motor_status_publisher = node.create_publisher("motor/front_left/status")?;
         let fr_motor_status_publisher = node.create_publisher("motor/front_right/status")?;

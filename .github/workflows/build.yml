@@ -32,7 +32,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: microcat-rs_v21
-          path: src/microcat-rs/target/release/microcat-rs
+          path: src/microcat-rs/target/debug/microcat-rs
           compression-level: '0'
       - name: lint
         run: cd src/microcat-rs && source /opt/ros/humble/setup.bash && cargo clippy -Fv21_hardware && echo "success" > ../../lint.status && cd ../..

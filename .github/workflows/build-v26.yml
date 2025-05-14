@@ -16,10 +16,11 @@ jobs:
         run: vcs import src < src/ros2_rust/ros2_rust_humble.repos
       - name: Install Rust
         run: curl https://sh.rustup.rs -sSf | sh -s -- -y && source $HOME/.cargo/env
-      - name: Cache setup
-        uses: Swatinem/rust-cache@v2
+      - name: Cache build outputs
+        uses: actions/cache@v4
         with:
-          workspaces: ./src/microcat-rs -> ../../build/microcat_rs
+          path: build
+          key: build-${{ runner.os }}-${{ runner.arch }}
       - name: build
         run: source /opt/ros/humble/setup.bash && echo ${AMENT_PREFIX_PATH} && colcon build --packages-up-to microcat_rs --merge-install && cd src/microcat-rs && cargo ament-build --install-base ../../install -- -Fv26_hardware && cd ../.. && echo "success" > build.status
       - name: Upload artifacts

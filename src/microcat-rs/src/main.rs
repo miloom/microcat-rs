@@ -1,7 +1,7 @@
 use crate::rgb::Rgb;
 use crate::serial::MotorPos;
 use bytes::BytesMut;
-use rclrs::{CreateBasicExecutor, PublisherOptions, QOS_PROFILE_DEFAULT};
+use rclrs::CreateBasicExecutor;
 use rppal::gpio::Gpio;
 use std::error::Error;
 use std::sync::Arc;
@@ -22,9 +22,13 @@ struct MicrocatNode {
     _node: Arc<rclrs::Node>,
     _motor_control_subscription: Arc<rclrs::Subscription<microcat_msgs::msg::MotorControl>>,
     _rgb_subscription: Arc<rclrs::Subscription<microcat_msgs::msg::Led>>,
-    motor_status_publisher: Arc<rclrs::Publisher<microcat_msgs::msg::MotorStatus>>,
+    fl_motor_status_publisher: Arc<rclrs::Publisher<microcat_msgs::msg::MotorStatus>>,
+    fr_motor_status_publisher: Arc<rclrs::Publisher<microcat_msgs::msg::MotorStatus>>,
+    rl_motor_status_publisher: Arc<rclrs::Publisher<microcat_msgs::msg::MotorStatus>>,
+    rr_motor_status_publisher: Arc<rclrs::Publisher<microcat_msgs::msg::MotorStatus>>,
     imu_publisher: Arc<rclrs::Publisher<microcat_msgs::msg::Imu>>,
-    tone_detector_publisher: Arc<rclrs::Publisher<microcat_msgs::msg::ToneDetector>>,
+    left_tone_detector_publisher: Arc<rclrs::Publisher<microcat_msgs::msg::ToneDetector>>,
+    right_tone_detector_publisher: Arc<rclrs::Publisher<microcat_msgs::msg::ToneDetector>>,
     pressure_data_publisher: Arc<rclrs::Publisher<microcat_msgs::msg::PressureData>>,
     camera_image_publisher: Arc<rclrs::Publisher<sensor_msgs::msg::Image>>,
     battery_data_publisher: Arc<rclrs::Publisher<microcat_msgs::msg::Battery>>,
@@ -89,32 +93,28 @@ impl MicrocatNode {
                 );
             })?;
 
-        let mut options = PublisherOptions::new("motor_status");
-        options.qos = QOS_PROFILE_DEFAULT;
-        let motor_status_publisher = node.create_publisher(options)?;
-        let mut options = PublisherOptions::new("imu/data");
-        options.qos = QOS_PROFILE_DEFAULT;
-        let imu_publisher = node.create_publisher(options)?;
-        let mut options = PublisherOptions::new("tone_detector/data");
-        options.qos = QOS_PROFILE_DEFAULT;
-        let tone_detector_publisher = node.create_publisher(options)?;
-        let mut options = PublisherOptions::new("pressure/data");
-        options.qos = QOS_PROFILE_DEFAULT;
-        let pressure_data_publisher = node.create_publisher(options)?;
-        let mut options = PublisherOptions::new("camera/image_raw");
-        options.qos = QOS_PROFILE_DEFAULT;
-        let camera_image_publisher = node.create_publisher(options)?;
-        let mut options = PublisherOptions::new("battery/voltage");
-        options.qos = QOS_PROFILE_DEFAULT;
-        let battery_data_publisher = node.create_publisher(options)?;
+        let fl_motor_status_publisher = node.create_publisher("motor/status/front_left")?;
+        let fr_motor_status_publisher = node.create_publisher("motor/status/front_right")?;
+        let rl_motor_status_publisher = node.create_publisher("motor/status/rear_left")?;
+        let rr_motor_status_publisher = node.create_publisher("motor/status/rear_right")?;
+        let imu_publisher = node.create_publisher("imu/data")?;
+        let left_tone_detector_publisher = node.create_publisher("tone_detector/left/data")?;
+        let right_tone_detector_publisher = node.create_publisher("tone_detector/right/data")?;
+        let pressure_data_publisher = node.create_publisher("pressure/data")?;
+        let camera_image_publisher = node.create_publisher("camera/image_raw")?;
+        let battery_data_publisher = node.create_publisher("battery/voltage")?;
         Ok(Self {
             _node: node,
             _motor_control_subscription,
             _rgb_subscription,
             rx,
-            motor_status_publisher,
+            fl_motor_status_publisher,
+            fr_motor_status_publisher,
+            rl_motor_status_publisher,
+            rr_motor_status_publisher,
             imu_publisher,
-            tone_detector_publisher,
+            left_tone_detector_publisher,
+            right_tone_detector_publisher,
             pressure_data_publisher,
             camera_image_publisher,
             battery_data_publisher,
@@ -123,20 +123,35 @@ impl MicrocatNode {
 
     #[tracing::instrument(level = "trace", skip(self))]
     async fn write(&mut self) {
-        trace!("{} messages in queue", self.rx.len());
         while let Some(msg) = self.rx.recv().await {
             match msg {
-                Telemetry::MotorPosition(position) => {
-                    trace!("Sending motor_position msg {position:?}");
-                    let _ = self.motor_status_publisher.publish(position);
+                Telemetry::FLMotorPosition(position) => {
+                    trace!("Sending front left motor_position msg {position:?}");
+                    let _ = self.fl_motor_status_publisher.publish(position);
+                }
+                Telemetry::FRMotorPosition(position) => {
+                    trace!("Sending front right motor_position msg {position:?}");
+                    let _ = self.fr_motor_status_publisher.publish(position);
+                }
+                Telemetry::RLMotorPosition(position) => {
+                    trace!("Sending rear left motor_position msg {position:?}");
+                    let _ = self.rl_motor_status_publisher.publish(position);
+                }
+                Telemetry::RRMotorPosition(position) => {
+                    trace!("Sending rear right motor_position msg {position:?}");
+                    let _ = self.rr_motor_status_publisher.publish(position);
                 }
                 Telemetry::Imu(imu) => {
                     trace!("Sending imu msg {imu:?}");
                     let _ = self.imu_publisher.publish(imu);
                 }
-                Telemetry::ToneDetector(tone_detector) => {
-                    trace!("Sending tone_detector msg {tone_detector:?}");
-                    let _ = self.tone_detector_publisher.publish(tone_detector);
+                Telemetry::LeftToneDetector(tone_detector) => {
+                    trace!("Sending left tone_detector msg {tone_detector:?}");
+                    let _ = self.left_tone_detector_publisher.publish(tone_detector);
+                }
+                Telemetry::RightToneDetector(tone_detector) => {
+                    trace!("Sending right tone_detector msg {tone_detector:?}");
+                    let _ = self.right_tone_detector_publisher.publish(tone_detector);
                 }
                 Telemetry::PressureData(pressure_data) => {
                     trace!("Sending pressure_data msg {pressure_data:?}");
@@ -156,9 +171,13 @@ impl MicrocatNode {
 }
 
 enum Telemetry {
-    MotorPosition(microcat_msgs::msg::MotorStatus),
+    FLMotorPosition(microcat_msgs::msg::MotorStatus),
+    FRMotorPosition(microcat_msgs::msg::MotorStatus),
+    RLMotorPosition(microcat_msgs::msg::MotorStatus),
+    RRMotorPosition(microcat_msgs::msg::MotorStatus),
     Imu(microcat_msgs::msg::Imu),
-    ToneDetector(microcat_msgs::msg::ToneDetector),
+    LeftToneDetector(microcat_msgs::msg::ToneDetector),
+    RightToneDetector(microcat_msgs::msg::ToneDetector),
     PressureData(microcat_msgs::msg::PressureData),
     CameraData(sensor_msgs::msg::Image),
     BatteryVoltage(microcat_msgs::msg::Battery),

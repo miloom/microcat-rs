@@ -3,6 +3,7 @@ use crate::serial::message::message::Data;
 use crate::Telemetry;
 use crate::Telemetry::BatteryVoltage;
 use bytes::BytesMut;
+use microcat_msgs::msg::{MotorStatus, ToneDetector};
 use prost::Message;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::sync::mpsc::Sender;
@@ -78,52 +79,48 @@ pub async fn read(
                         }
                         Some(message::message::Data::MotorTarget(msg)) => {}
                         Some(message::message::Data::MotorPosition(msg)) => {
-                            let _ = tx
-                                .send(Telemetry::MotorPosition(microcat_msgs::msg::MotorStatus {
-                                    location: if let Ok(loc) =
-                                        motor::Location::try_from(msg.location)
-                                    {
-                                        match loc {
-                                            motor::Location::FrontLeft => {
-                                                microcat_msgs::msg::MotorStatus::FRONT_LEFT
-                                            }
-                                            motor::Location::FrontRight => {
-                                                microcat_msgs::msg::MotorStatus::FRONT_RIGHT
-                                            }
-                                            motor::Location::BackLeft => {
-                                                microcat_msgs::msg::MotorStatus::REAR_LEFT
-                                            }
-                                            motor::Location::BackRight => {
-                                                microcat_msgs::msg::MotorStatus::REAR_RIGHT
-                                            }
-                                        }
-                                    } else {
-                                        255
-                                    },
-                                    position: msg.position,
-                                }))
+                            if let Ok(loc) = motor::Location::try_from(msg.location) {
+                                let _ = match loc {
+                                    motor::Location::FrontLeft => {
+                                        tx.send(Telemetry::FLMotorPosition(MotorStatus {
+                                            position: msg.position,
+                                        }))
+                                    }
+                                    motor::Location::FrontRight => {
+                                        tx.send(Telemetry::FRMotorPosition(MotorStatus {
+                                            position: msg.position,
+                                        }))
+                                    }
+                                    motor::Location::BackLeft => {
+                                        tx.send(Telemetry::RLMotorPosition(MotorStatus {
+                                            position: msg.position,
+                                        }))
+                                    }
+                                    motor::Location::BackRight => {
+                                        tx.send(Telemetry::RRMotorPosition(MotorStatus {
+                                            position: msg.position,
+                                        }))
+                                    }
+                                }
                                 .await;
+                            }
                         }
                         Some(message::message::Data::ToneDetectorStatus(msg)) => {
-                            let _ = tx
-                                .send(Telemetry::ToneDetector(microcat_msgs::msg::ToneDetector {
-                                    location: if let Ok(loc) =
-                                        tone_detector::Location::try_from(msg.location)
-                                    {
-                                        match loc {
-                                            tone_detector::Location::Left => {
-                                                microcat_msgs::msg::ToneDetector::LEFT
-                                            }
-                                            tone_detector::Location::Right => {
-                                                microcat_msgs::msg::ToneDetector::RIGHT
-                                            }
-                                        }
-                                    } else {
-                                        255
-                                    },
-                                    is_active: msg.is_high,
-                                }))
+                            if let Ok(loc) = tone_detector::Location::try_from(msg.location) {
+                                let _ = match loc {
+                                    tone_detector::Location::Left => {
+                                        tx.send(Telemetry::LeftToneDetector(ToneDetector {
+                                            is_active: msg.is_high,
+                                        }))
+                                    }
+                                    tone_detector::Location::Right => {
+                                        tx.send(Telemetry::RightToneDetector(ToneDetector {
+                                            is_active: msg.is_high,
+                                        }))
+                                    }
+                                }
                                 .await;
+                            }
                         }
                         Some(message::message::Data::PressureData(msg)) => {
                             let _ = tx

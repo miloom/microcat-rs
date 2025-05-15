@@ -169,7 +169,7 @@ pub async fn read(
                 .lines()
             {
                 info!("ATMEGA: {}", line);
-                message_buffer.advance(line.len() + 2);
+                message_buffer.advance(line.len() + 1);
             }
         }
         Err(e) => {

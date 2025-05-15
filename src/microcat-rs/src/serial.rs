@@ -233,6 +233,12 @@ pub async fn write(serial: &mut SerialStream, command: Command) {
     info!("Sending: {:#04x?}", &dest[..=len]);
     match serial.write(&dest[..=len]).await {
         Ok(n) => {
+            match serial.flush().await {
+                Ok(_) => {}
+                Err(e) => {
+                    error!("Failed to flush serial: {}", e);
+                }
+            };
             info!("Wrote {} bytes", n);
         }
         Err(e) => {

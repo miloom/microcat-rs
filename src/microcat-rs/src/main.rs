@@ -280,7 +280,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
                         info!("Shutting down ROS node...");
                         break;
                     }
-                    _ = microcat_node.write() => {}
+                    () = microcat_node.write() => {
+                        continue;
+                    }
                 }
             }
         })

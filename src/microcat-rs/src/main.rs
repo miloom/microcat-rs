@@ -284,6 +284,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 }
             }
             let _ = tokio::join!(executor_handle);
+            info!("Stopped ROS executor");
         })
     };
 

@@ -231,16 +231,8 @@ pub async fn write(serial: &mut SerialStream, command: Command) {
     let len = cobs::encode(buf.iter().as_slice(), &mut dest);
     dest[len] = 0;
     info!("Sending: {:#04x?}", &dest[..=len]);
-    match serial.write(&dest[..=len]).await {
-        Ok(n) => {
-            match serial.flush().await {
-                Ok(_) => {}
-                Err(e) => {
-                    error!("Failed to flush serial: {}", e);
-                }
-            };
-            info!("Wrote {} bytes", n);
-        }
+    match serial.write_all(&dest[..=len]).await {
+        Ok(_) => {}
         Err(e) => {
             error!("Failed to write to serial: {}", e);
         }

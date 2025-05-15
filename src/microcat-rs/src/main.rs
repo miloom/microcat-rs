@@ -267,13 +267,11 @@ async fn main() -> Result<(), Box<dyn Error>> {
             let mut microcat_node = MicrocatNode::new(&executor, rgb, telemetry_rx, command_tx)
                 .expect("Failed to create microcat node");
 
-            loop {
-                let mut options = SpinOptions::spin_once();
-                options.timeout = Some(std::time::Duration::from_millis(1));
-                debug!("Spinning executor");
-                let val = executor.spin(options);
-                debug!("Finished spinning executor {val:?}");
+            tokio::spawn(async move {
+                executor.spin(Default::default());
+            });
 
+            loop {
                 tokio::select! {
                     _ = shutdown_rx.changed() => {
                         println!("Shutting down ROS node...");

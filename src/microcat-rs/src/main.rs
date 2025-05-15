@@ -55,7 +55,7 @@ impl MicrocatNode {
                 move |msg: microcat_msgs::msg::MotorControl| {
                     trace!("Received front_left motor_control msg {msg:?}");
 
-                    let command = serial::Command::MotorPosition(MotorPos {
+                    let command = serial::Command::MotorTarget(MotorPos {
                         location: MotorLocation::FrontLeft,
                         target_position: msg.position,
                         frequency: msg.frequency,
@@ -73,7 +73,7 @@ impl MicrocatNode {
                 move |msg: microcat_msgs::msg::MotorControl| {
                     trace!("Received front_right motor_control msg {msg:?}");
 
-                    let command = serial::Command::MotorPosition(MotorPos {
+                    let command = serial::Command::MotorTarget(MotorPos {
                         location: MotorLocation::FrontRight,
                         target_position: msg.position,
                         frequency: msg.frequency,
@@ -91,7 +91,7 @@ impl MicrocatNode {
                 move |msg: microcat_msgs::msg::MotorControl| {
                     trace!("Received rear_left motor_control msg {msg:?}");
 
-                    let command = serial::Command::MotorPosition(MotorPos {
+                    let command = serial::Command::MotorTarget(MotorPos {
                         location: MotorLocation::RearLeft,
                         target_position: msg.position,
                         frequency: msg.frequency,
@@ -109,7 +109,7 @@ impl MicrocatNode {
                 move |msg: microcat_msgs::msg::MotorControl| {
                     debug!("Received rear_right motor_control msg {msg:?}");
 
-                    let command = serial::Command::MotorPosition(MotorPos {
+                    let command = serial::Command::MotorTarget(MotorPos {
                         location: MotorLocation::RearRight,
                         target_position: msg.position,
                         frequency: msg.frequency,

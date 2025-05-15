@@ -8,7 +8,7 @@ use prost::Message;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::sync::mpsc::Sender;
 use tokio_serial::SerialStream;
-use tracing::{debug, error, trace};
+use tracing::{debug, error, info, trace};
 
 #[rustfmt::skip]
 mod imu;
@@ -140,6 +140,9 @@ pub async fn read(
                         None => {
                             return Ok(());
                         }
+                        Some(Data::DebugMessage(msg)) => {
+                            info!("ATMEGA: {msg}");
+                        }
                     }
                 } else {
                     debug!("Failed to decode serial")
@@ -172,14 +175,14 @@ pub struct MotorPos {
 
 #[derive(Debug)]
 pub enum Command {
-    MotorPosition(MotorPos),
+    MotorTarget(MotorPos),
 }
 
 #[tracing::instrument(level = "trace", skip(serial))]
 pub async fn write(serial: &mut SerialStream, command: Command) {
     debug!("Writing to serial");
     let message = match command {
-        Command::MotorPosition(pos) => {
+        Command::MotorTarget(pos) => {
             let data = motor::MotorTarget {
                 target_position: pos.target_position,
                 amplitude: pos.amplitude,

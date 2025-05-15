@@ -8,6 +8,7 @@ build = "build.rs"
 default = ["v21_hardware"]
 v21_hardware = []
 v26_hardware = []
+debug = []
 
 [dependencies]
 rppal = { version = "0.22.1", features = ["embedded-hal"] }

@@ -267,7 +267,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
             let mut microcat_node = MicrocatNode::new(&executor, rgb, telemetry_rx, command_tx)
                 .expect("Failed to create microcat node");
 
-            let executor_handle = tokio::spawn(async move {
+            let _ = std::thread::spawn(move || {
                 executor.spin(Default::default());
             });
 
@@ -282,12 +282,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
                         continue;
                     }
                 }
-            }
-            executor_handle.abort();
-            match executor_handle.await {
-                Ok(_) => println!("Executor task completed"),
-                Err(e) if e.is_cancelled() => println!("Executor task was aborted"),
-                Err(e) => println!("Executor task failed: {:?}", e),
             }
             info!("Stopped ROS executor");
         })

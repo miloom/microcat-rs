@@ -2,7 +2,7 @@
 use crate::serial::message::message::Data;
 use crate::Telemetry;
 use crate::Telemetry::BatteryVoltage;
-use bytes::BytesMut;
+use bytes::{Buf, BytesMut};
 use microcat_msgs::msg::{MotorStatus, ToneDetector};
 use prost::Message;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
@@ -161,7 +161,16 @@ pub async fn read(
             return Ok(());
         }
         Ok(n) => {
-            info!("ATMEGA: {}", String::from_utf8_lossy(&buf[..n]));
+            message_buffer.extend(buf[..n].iter());
+            for line in message_buffer
+                .iter()
+                .map(|v| *v as char)
+                .collect::<String>()
+                .lines()
+            {
+                info!("ATMEGA: {}", line);
+                message_buffer.advance(line.len());
+            }
         }
         Err(e) => {
             error!("Failed to read serial buffer: {}", e);

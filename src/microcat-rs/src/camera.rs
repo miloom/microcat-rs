@@ -142,6 +142,10 @@ pub fn run_camera(
                     },
                     frame_id: String::new(),
                 };
+
+                let mut data = Vec::with_capacity(bytes_used);
+                data.extend_from_slice(&rgb_data[..bytes_used]);
+
                 let image = sensor_msgs::msg::Image {
                     header,
                     height,
@@ -149,7 +153,7 @@ pub fn run_camera(
                     encoding: "rgb8".to_string(),
                     is_bigendian: 0,
                     step: width * 3,
-                    data: rgb_data[..bytes_used].to_vec(),
+                    data,
                 };
                 if let Err(e) = telemetry_tx.blocking_send(Telemetry::CameraData(image)) {
                     error!("Error sending image: {}", e);

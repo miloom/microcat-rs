@@ -252,12 +252,20 @@ pub async fn write(serial: &mut SerialStream, command: Command) {
         error!("Failed to encode protobuf message");
         return;
     }
+    info!("Protobuf encoded bytes: {:#04x?}", &buf);
+    info!("Protobuf length: {}", buf.len());
+
     let mut dest = [0u8; 128];
     let len = cobs::encode(buf.iter().as_slice(), &mut dest);
     dest[len] = 0;
-    info!("Sending: {:#04x?}", &dest[..=len]);
-    match serial.write_all(&dest[..=len]).await {
-        Ok(_) => {}
+    let full_len = len + 1;
+    info!("Sending ({} bytes): {:#04x?}", full_len, &dest[..full_len]);
+
+    match serial.write_all(&dest[..full_len]).await {
+        Ok(_) => {
+            info!("Successfully wrote all {} bytes", full_len);
+            serial.flush().await.unwrap(); // Ensure data hits the wire
+        }
         Err(e) => {
             error!("Failed to write to serial: {}", e);
         }

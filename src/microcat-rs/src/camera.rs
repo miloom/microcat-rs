@@ -13,7 +13,7 @@ use libcamera::{
 use std::thread::JoinHandle;
 use tokio::sync::mpsc::Sender;
 use tokio::sync::watch::Receiver;
-use tracing::{debug, info};
+use tracing::{debug, error, info};
 
 pub fn run_camera(
     telemetry_tx: Sender<crate::Telemetry>,
@@ -32,7 +32,7 @@ pub fn run_camera(
         let mut cam = cam.acquire().expect("Unable to acquire camera");
 
         let mut cfgs = cam
-            .generate_configuration(&[StreamRole::ViewFinder])
+            .generate_configuration(&[StreamRole::VideoRecording])
             .unwrap();
         for format in cfgs.get(0).unwrap().formats().pixel_formats().into_iter() {
             info!(
@@ -47,6 +47,9 @@ pub fn run_camera(
                 format.modifier()
             );
         }
+        cfgs.get(0).unwrap().formats().sizes(PIXEL_FORMAT_RGB).iter().for_each(|size| {
+            debug!("{:?}", size);
+        });
         const PIXEL_FORMAT_RGB: PixelFormat =
             PixelFormat::new(u32::from_le_bytes([b'R', b'G', b'2', b'4']), 0);
 
@@ -56,6 +59,8 @@ pub fn run_camera(
         };
         cfgs.get_mut(0).unwrap().set_pixel_format(PIXEL_FORMAT_RGB);
         cfgs.get_mut(0).unwrap().set_size(size);
+
+        cfgs.get(0).unwrap().get_frame_size()
 
         match cfgs.validate() {
             CameraConfigurationStatus::Valid => info!("Camera configuration valid!"),
@@ -69,7 +74,7 @@ pub fn run_camera(
         assert_eq!(
             cfgs.get(0).unwrap().get_pixel_format(),
             PIXEL_FORMAT_RGB,
-            "RGB is not supported by the camera"
+            "RGB24 is not supported by the camera"
         );
         cam.configure(&mut cfgs)
             .expect("Unable to configure camera");
@@ -98,11 +103,10 @@ pub fn run_camera(
         });
         cam.start(None).unwrap();
         for req in reqs {
-            debug!("Request queued for execution: {req:#?}");
             cam.queue_request(req).unwrap();
         }
-        let width = cfg.get_size().width as usize;
-        let height = cfg.get_size().height as usize;
+        let width = cfg.get_size().width;
+        let height = cfg.get_size().height;
         let mut next_run = tokio::time::Instant::now();
         loop {
             if let Ok(true) = shutdown_rx.has_changed() {
@@ -110,9 +114,6 @@ pub fn run_camera(
                 info!("Shutting down Camera task...");
                 break;
             } else if let Ok(mut req) = rx.try_recv() {
-                while tokio::time::Instant::now() < next_run {
-                    core::hint::spin_loop();
-                }
                 // trace!("Camera request {:?} completed!", req);
                 // trace!("Metadata: {:#?}", req.metadata());
 
@@ -122,7 +123,7 @@ pub fn run_camera(
 
                 let planes = framebuffer.data();
                 let rgb_data = planes.first().unwrap();
-                // Actual encoded data will be smalled than framebuffer size, its length can be obtained from metadata.
+                // Actual encoded data will be smaller than framebuffer size, its length can be obtained from metadata.
                 let bytes_used = framebuffer
                     .metadata()
                     .unwrap()
@@ -140,15 +141,20 @@ pub fn run_camera(
                 };
                 let image = sensor_msgs::msg::Image {
                     header,
-                    height: height as u32,
-                    width: width as u32,
+                    height,
+                    width,
                     encoding: "rgb8".to_string(),
                     is_bigendian: 0,
-                    step: (width * 3) as u32,
+                    step: width * 3,
                     data: rgb_data[..bytes_used].to_vec(),
                 };
-                let _ = telemetry_tx.blocking_send(Telemetry::CameraData(image));
+                if let Err(e) = telemetry_tx.blocking_send(Telemetry::CameraData(image)) {
+                    error!("Error sending image: {}", e);
+                }
 
+                while tokio::time::Instant::now() < next_run {
+                    core::hint::spin_loop();
+                }
                 req.reuse(ReuseFlag::REUSE_BUFFERS);
                 cam.queue_request(req).unwrap();
                 next_run += tokio::time::Duration::from_millis(1000);

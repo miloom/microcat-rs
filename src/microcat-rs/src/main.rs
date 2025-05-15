@@ -283,7 +283,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                     }
                 }
             }
-            let _ = tokio::join!(executor_handle);
+            executor_handle.abort();
             info!("Stopped ROS executor");
         })
     };

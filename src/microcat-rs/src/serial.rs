@@ -157,8 +157,11 @@ pub async fn read(
         }
     }
     let mut buf = String::new();
-    if serial.read_to_string(&mut buf).await.is_ok() {
+    let result = serial.read_to_string(&mut buf).await;
+    if result.is_ok() {
         info!("ATMEGA: {}", buf);
+    } else if let Err(e) = result {
+        error!("Failed to read serial buffer: {}", e);
     }
     Ok(())
 }

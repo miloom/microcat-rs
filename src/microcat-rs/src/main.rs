@@ -1,7 +1,7 @@
 use crate::rgb::Rgb;
 use crate::serial::{MotorLocation, MotorPos};
 use bytes::BytesMut;
-use rclrs::CreateBasicExecutor;
+use rclrs::{CreateBasicExecutor, SpinOptions};
 use rppal::gpio::Gpio;
 use std::error::Error;
 use std::sync::Arc;
@@ -122,9 +122,9 @@ impl MicrocatNode {
             )?;
 
         let _rgb_subscription = node.create_subscription::<microcat_msgs::msg::Led, _>(
-            "rgb_led",
+            "led",
             move |msg: microcat_msgs::msg::Led| {
-                debug!("Received rgb_led msg {msg:?}");
+                debug!("Received led msg {msg:?}");
                 rgb.set_color(
                     msg.red.clamp(0.0, 100.0),
                     msg.green.clamp(0.0, 100.0),
@@ -258,7 +258,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     info!("Channels created!");
 
     let context = rclrs::Context::default_from_env()?;
-    let executor = context.create_basic_executor();
+    let mut executor = context.create_basic_executor();
 
     let ros_task = {
         let mut shutdown_rx = shutdown_rx.clone();
@@ -266,6 +266,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
             let mut microcat_node = MicrocatNode::new(&executor, rgb, telemetry_rx, command_tx)
                 .expect("Failed to create microcat node");
             loop {
+                executor.spin(SpinOptions::spin_once());
                 tokio::select! {
                     _ = shutdown_rx.changed() => {
                         println!("Shutting down ROS node...");

@@ -221,6 +221,6 @@ pub async fn write(serial: &mut SerialStream, command: Command) {
     let mut dest = [0u8; 128];
     let len = cobs::encode(buf.iter().as_slice(), &mut dest);
     dest[len] = 0;
-    info!("Sending: {:#4x?}", &dest[..=len]);
+    info!("Sending: {:#04x?}", &dest[..=len]);
     let _ = serial.write(&dest[..=len]).await;
 }

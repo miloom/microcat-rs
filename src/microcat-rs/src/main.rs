@@ -7,7 +7,7 @@ use std::error::Error;
 use std::sync::Arc;
 use tokio::sync::mpsc;
 use tokio::sync::mpsc::{Receiver, Sender};
-use tokio_serial::SerialPortBuilderExt;
+use tokio_serial::{DataBits, FlowControl, Parity, SerialPortBuilderExt, StopBits};
 use tracing::{debug, error, info, trace};
 use tracing_appender::rolling;
 use tracing_subscriber::EnvFilter;
@@ -321,6 +321,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
             let mut serial_buf = BytesMut::default();
             let mut initialized = false;
             let mut serial = tokio_serial::new("/dev/ttyAMA0", 115_200)
+                .data_bits(DataBits::Eight)
+                .flow_control(FlowControl::None)
+                .parity(Parity::None)
+                .stop_bits(StopBits::One)
                 .open_native_async()
                 .expect("Failed to open serial port");
 

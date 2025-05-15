@@ -64,6 +64,7 @@ pub fn run_camera(
         };
         cfgs.get_mut(0).unwrap().set_pixel_format(PIXEL_FORMAT_RGB);
         cfgs.get_mut(0).unwrap().set_size(size);
+        cfgs.get_mut(0).unwrap().set_buffer_count(2);
 
         match cfgs.validate() {
             CameraConfigurationStatus::Valid => info!("Camera configuration valid!"),
@@ -110,7 +111,6 @@ pub fn run_camera(
         }
         let width = cfg.get_size().width;
         let height = cfg.get_size().height;
-        let mut next_run = tokio::time::Instant::now();
         loop {
             if let Ok(true) = shutdown_rx.has_changed() {
                 println!("Shutting down Camera task...");
@@ -155,12 +155,8 @@ pub fn run_camera(
                     error!("Error sending image: {}", e);
                 }
 
-                while tokio::time::Instant::now() < next_run {
-                    core::hint::spin_loop();
-                }
                 req.reuse(ReuseFlag::REUSE_BUFFERS);
                 cam.queue_request(req).unwrap();
-                next_run += tokio::time::Duration::from_millis(1000);
             }
         }
     })

@@ -284,6 +284,11 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 }
             }
             executor_handle.abort();
+            match executor_handle.await {
+                Ok(_) => println!("Executor task completed"),
+                Err(e) if e.is_cancelled() => println!("Executor task was aborted"),
+                Err(e) => println!("Executor task failed: {:?}", e),
+            }
             info!("Stopped ROS executor");
         })
     };

@@ -22,6 +22,37 @@ mod pressure;
 #[rustfmt::skip]
 mod tone_detector;
 
+pub fn extract_complete_lines(buffer: &mut BytesMut) -> Vec<String> {
+    let mut lines = Vec::new();
+    let mut start = 0;
+
+    while let Some(pos) = buffer[start..].iter().position(|&b| b == b'\n') {
+        let end = start + pos;
+
+        // Extract line slice
+        let line_bytes = if end > 0 && buffer[end - 1] == b'\r' {
+            &buffer[start..end - 1] // Remove '\r'
+        } else {
+            &buffer[start..end]
+        };
+
+        // Convert to string if valid UTF-8
+        match std::str::from_utf8(line_bytes) {
+            Ok(line) => lines.push(line.to_string()),
+            Err(_) => {
+                // Optionally handle decoding errors here.
+                // For now, just skip invalid lines.
+            }
+        }
+
+        start = end + 1; // Skip over '\n'
+    }
+
+    // Remove the processed part from the buffer
+    buffer.advance(start);
+    lines
+}
+
 #[tracing::instrument(level = "trace", skip(serial, tx))]
 pub async fn read(
     serial: &mut SerialStream,
@@ -162,14 +193,8 @@ pub async fn read(
         }
         Ok(n) => {
             message_buffer.extend(buf[..n].iter());
-            for line in message_buffer
-                .iter()
-                .map(|v| *v as char)
-                .collect::<String>()
-                .lines()
-            {
+            for line in extract_complete_lines(message_buffer) {
                 info!("ATMEGA: {}", line);
-                message_buffer.advance(line.len() + 1);
             }
         }
         Err(e) => {

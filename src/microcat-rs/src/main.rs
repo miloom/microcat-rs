@@ -267,6 +267,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
             let mut microcat_node = MicrocatNode::new(&executor, rgb, telemetry_rx, command_tx)
                 .expect("Failed to create microcat node");
             loop {
+                debug!("Spinning executor");
+                let val = executor.spin(SpinOptions::spin_once());
+                debug!("Finished spinning executor {val:?}");
+
                 tokio::select! {
                     _ = shutdown_rx.changed() => {
                         println!("Shutting down ROS node...");
@@ -276,12 +280,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
                     _ = microcat_node.write() => {}
                 }
             }
-        })
-    };
-
-    let executor_task = {
-        tokio::spawn(async move {
-            executor.spin(Default::default());
         })
     };
 
@@ -350,7 +348,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         camera::run_camera(camera_telemetry_tx, shutdown_rx)
     };
 
-    let (_, _, _, _) = tokio::join!(serial_task, ros_task, shutdown_signal_task, executor_task);
+    let (_, _, _) = tokio::join!(serial_task, ros_task, shutdown_signal_task);
 
     tokio::task::spawn_blocking(move || {
         camera_handle.join().expect("Failed to join camera task");

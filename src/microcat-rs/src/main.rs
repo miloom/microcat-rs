@@ -332,7 +332,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
                         &mut serial,
                         &mut serial_buf,
                         &mut initialized,
-                        &mut serial_telemetry_tx) => {}
+                        &mut serial_telemetry_tx) => {
+                        debug!("Serial read complete");
+                    }
                      val = command_rx.recv() => {
                         if let Some(command) = val {
                             debug!("Serial got command {command:?}");

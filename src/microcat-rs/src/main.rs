@@ -1,14 +1,14 @@
 use crate::rgb::Rgb;
 use crate::serial::{MotorLocation, MotorPos};
 use bytes::BytesMut;
-use rclrs::{CreateBasicExecutor, RclrsErrorFilter, SpinOptions};
+use rclrs::CreateBasicExecutor;
 use rppal::gpio::Gpio;
 use std::error::Error;
 use std::sync::Arc;
 use tokio::sync::mpsc;
 use tokio::sync::mpsc::{Receiver, Sender};
 use tokio_serial::SerialPortBuilderExt;
-use tracing::{debug, error, info, span, trace};
+use tracing::{debug, error, info, trace};
 use tracing_appender::rolling;
 use tracing_subscriber::EnvFilter;
 
@@ -267,7 +267,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
             let mut microcat_node = MicrocatNode::new(&executor, rgb, telemetry_rx, command_tx)
                 .expect("Failed to create microcat node");
 
-            tokio::spawn(async move {
+            let executor_handle = tokio::spawn(async move {
                 executor.spin(Default::default());
             });
 
@@ -283,6 +283,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                     }
                 }
             }
+            let _ = tokio::join!(executor_handle);
         })
     };
 

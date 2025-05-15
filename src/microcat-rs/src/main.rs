@@ -130,7 +130,6 @@ impl MicrocatNode {
                     msg.green.clamp(0.0, 100.0),
                     msg.blue.clamp(0.0, 100.0),
                 );
-                debug!("Finish set color");
             },
         )?;
 
@@ -333,8 +332,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
                         &mut serial_buf,
                         &mut initialized,
                         &mut serial_telemetry_tx) => {}
-                    Some(command) = command_rx.recv() => {
-                        serial::write(&mut serial, command).await;
+                     val = command_rx.recv() => {
+                        if let Some(command) = val {
+                            serial::write(&mut serial, command).await;
+                        }
                     }
                     _ = shutdown_rx.changed() => {
                         println!("Shutting down Serial task...");

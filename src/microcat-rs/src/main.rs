@@ -1,7 +1,7 @@
 use crate::rgb::Rgb;
 use crate::serial::{MotorLocation, MotorPos};
 use bytes::BytesMut;
-use rclrs::{CreateBasicExecutor, SpinOptions};
+use rclrs::{CreateBasicExecutor, RclrsErrorFilter, SpinOptions};
 use rppal::gpio::Gpio;
 use std::error::Error;
 use std::sync::Arc;
@@ -266,9 +266,12 @@ async fn main() -> Result<(), Box<dyn Error>> {
         tokio::spawn(async move {
             let mut microcat_node = MicrocatNode::new(&executor, rgb, telemetry_rx, command_tx)
                 .expect("Failed to create microcat node");
+
             loop {
+                let mut options = SpinOptions::spin_once();
+                options.timeout = Some(std::time::Duration::from_millis(1));
                 debug!("Spinning executor");
-                let val = executor.spin(SpinOptions::spin_once());
+                let val = executor.spin(options);
                 debug!("Finished spinning executor {val:?}");
 
                 tokio::select! {

@@ -177,7 +177,7 @@ pub enum Command {
 
 #[tracing::instrument(level = "trace", skip(serial))]
 pub async fn write(serial: &mut SerialStream, command: Command) {
-    trace!("Writing to serial");
+    debug!("Writing to serial");
     let message = match command {
         Command::MotorPosition(pos) => {
             let data = motor::MotorTarget {

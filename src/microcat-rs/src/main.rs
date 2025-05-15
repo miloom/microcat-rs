@@ -53,7 +53,7 @@ impl MicrocatNode {
             .create_subscription::<microcat_msgs::msg::MotorControl, _>(
                 "/motor/front_left/control",
                 move |msg: microcat_msgs::msg::MotorControl| {
-                    trace!("Received motor_control msg {msg:?}");
+                    trace!("Received front_left motor_control msg {msg:?}");
 
                     let command = serial::Command::MotorPosition(MotorPos {
                         location: MotorLocation::FrontLeft,
@@ -71,7 +71,7 @@ impl MicrocatNode {
             .create_subscription::<microcat_msgs::msg::MotorControl, _>(
                 "/motor/front_right/control",
                 move |msg: microcat_msgs::msg::MotorControl| {
-                    trace!("Received motor_control msg {msg:?}");
+                    trace!("Received front_right motor_control msg {msg:?}");
 
                     let command = serial::Command::MotorPosition(MotorPos {
                         location: MotorLocation::FrontRight,
@@ -89,7 +89,7 @@ impl MicrocatNode {
             .create_subscription::<microcat_msgs::msg::MotorControl, _>(
                 "/motor/rear_left/control",
                 move |msg: microcat_msgs::msg::MotorControl| {
-                    trace!("Received motor_control msg {msg:?}");
+                    trace!("Received rear_left motor_control msg {msg:?}");
 
                     let command = serial::Command::MotorPosition(MotorPos {
                         location: MotorLocation::RearLeft,
@@ -107,7 +107,7 @@ impl MicrocatNode {
             .create_subscription::<microcat_msgs::msg::MotorControl, _>(
                 "/motor/rear_right/control",
                 move |msg: microcat_msgs::msg::MotorControl| {
-                    debug!("Received motor_control msg {msg:?}");
+                    debug!("Received rear_right motor_control msg {msg:?}");
 
                     let command = serial::Command::MotorPosition(MotorPos {
                         location: MotorLocation::RearRight,
@@ -335,6 +335,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                         &mut serial_telemetry_tx) => {}
                      val = command_rx.recv() => {
                         if let Some(command) = val {
+                            debug!("Serial got command {command:?}");
                             serial::write(&mut serial, command).await;
                         }
                     }

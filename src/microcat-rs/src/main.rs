@@ -51,7 +51,7 @@ impl MicrocatNode {
         let tx_clone = tx.clone();
         let _fl_motor_control_subscription = node
             .create_subscription::<microcat_msgs::msg::MotorControl, _>(
-                "motor/front_left/control",
+                "/motor/front_left/control",
                 move |msg: microcat_msgs::msg::MotorControl| {
                     trace!("Received motor_control msg {msg:?}");
 
@@ -69,7 +69,7 @@ impl MicrocatNode {
         let tx_clone = tx.clone();
         let _fr_motor_control_subscription = node
             .create_subscription::<microcat_msgs::msg::MotorControl, _>(
-                "motor/front_right/control",
+                "/motor/front_right/control",
                 move |msg: microcat_msgs::msg::MotorControl| {
                     trace!("Received motor_control msg {msg:?}");
 
@@ -87,7 +87,7 @@ impl MicrocatNode {
         let tx_clone = tx.clone();
         let _rl_motor_control_subscription = node
             .create_subscription::<microcat_msgs::msg::MotorControl, _>(
-                "motor/rear_left/control",
+                "/motor/rear_left/control",
                 move |msg: microcat_msgs::msg::MotorControl| {
                     trace!("Received motor_control msg {msg:?}");
 
@@ -105,7 +105,7 @@ impl MicrocatNode {
         let tx_clone = tx.clone();
         let _rr_motor_control_subscription = node
             .create_subscription::<microcat_msgs::msg::MotorControl, _>(
-                "motor/rear_right/control",
+                "/motor/rear_right/control",
                 move |msg: microcat_msgs::msg::MotorControl| {
                     debug!("Received motor_control msg {msg:?}");
 
@@ -122,7 +122,7 @@ impl MicrocatNode {
             )?;
 
         let _rgb_subscription = node.create_subscription::<microcat_msgs::msg::Led, _>(
-            "led",
+            "/led",
             move |msg: microcat_msgs::msg::Led| {
                 debug!("Received led msg {msg:?}");
                 rgb.set_color(
@@ -130,6 +130,7 @@ impl MicrocatNode {
                     msg.green.clamp(0.0, 100.0),
                     msg.blue.clamp(0.0, 100.0),
                 );
+                debug!("Finish set color");
             },
         )?;
 
@@ -266,7 +267,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
             let mut microcat_node = MicrocatNode::new(&executor, rgb, telemetry_rx, command_tx)
                 .expect("Failed to create microcat node");
             loop {
-                executor.spin(SpinOptions::spin_once());
                 tokio::select! {
                     _ = shutdown_rx.changed() => {
                         println!("Shutting down ROS node...");
@@ -276,6 +276,12 @@ async fn main() -> Result<(), Box<dyn Error>> {
                     _ = microcat_node.write() => {}
                 }
             }
+        })
+    };
+
+    let executor_task = {
+        tokio::spawn(async move {
+            executor.spin(Default::default());
         })
     };
 
@@ -344,7 +350,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         camera::run_camera(camera_telemetry_tx, shutdown_rx)
     };
 
-    let (_, _, _) = tokio::join!(serial_task, ros_task, shutdown_signal_task,);
+    let (_, _, _, _) = tokio::join!(serial_task, ros_task, shutdown_signal_task, executor_task);
 
     tokio::task::spawn_blocking(move || {
         camera_handle.join().expect("Failed to join camera task");

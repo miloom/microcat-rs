@@ -151,7 +151,7 @@ pub fn run_camera(
 
                 req.reuse(ReuseFlag::REUSE_BUFFERS);
                 cam.queue_request(req).unwrap();
-                next_run += tokio::time::Duration::from_millis(300);
+                next_run += tokio::time::Duration::from_millis(1000);
             }
         }
     })

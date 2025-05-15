@@ -259,8 +259,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let context = rclrs::Context::default_from_env()?;
     let mut executor = context.create_basic_executor();
-
     let ros_task = {
+        let command_tx = command_tx.clone();
+
         let mut shutdown_rx = shutdown_rx.clone();
         tokio::spawn(async move {
             let mut microcat_node = MicrocatNode::new(&executor, rgb, telemetry_rx, command_tx)

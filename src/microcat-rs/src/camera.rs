@@ -35,7 +35,7 @@ pub fn run_camera(
             .generate_configuration(&[StreamRole::VideoRecording])
             .unwrap();
         for format in cfgs.get(0).unwrap().formats().pixel_formats().into_iter() {
-            info!(
+            debug!(
                 "{:?} {} {}",
                 format,
                 format
@@ -47,9 +47,14 @@ pub fn run_camera(
                 format.modifier()
             );
         }
-        cfgs.get(0).unwrap().formats().sizes(PIXEL_FORMAT_RGB).iter().for_each(|size| {
-            debug!("{:?}", size);
-        });
+        cfgs.get(0)
+            .unwrap()
+            .formats()
+            .sizes(PIXEL_FORMAT_RGB)
+            .iter()
+            .for_each(|size| {
+                debug!("{:?}", size);
+            });
         const PIXEL_FORMAT_RGB: PixelFormat =
             PixelFormat::new(u32::from_le_bytes([b'R', b'G', b'2', b'4']), 0);
 
@@ -59,8 +64,6 @@ pub fn run_camera(
         };
         cfgs.get_mut(0).unwrap().set_pixel_format(PIXEL_FORMAT_RGB);
         cfgs.get_mut(0).unwrap().set_size(size);
-
-        cfgs.get(0).unwrap().get_frame_size()
 
         match cfgs.validate() {
             CameraConfigurationStatus::Valid => info!("Camera configuration valid!"),

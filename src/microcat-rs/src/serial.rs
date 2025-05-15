@@ -222,5 +222,12 @@ pub async fn write(serial: &mut SerialStream, command: Command) {
     let len = cobs::encode(buf.iter().as_slice(), &mut dest);
     dest[len] = 0;
     info!("Sending: {:#04x?}", &dest[..=len]);
-    let _ = serial.write(&dest[..=len]).await;
+    match serial.write(&dest[..=len]).await {
+        Ok(n) => {
+            info!("Wrote {} bytes", n);
+        }
+        Err(e) => {
+            error!("Failed to write to serial: {}", e);
+        }
+    }
 }

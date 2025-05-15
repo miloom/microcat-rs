@@ -29,8 +29,7 @@ pub async fn read(
     initialized: &mut bool,
     tx: &mut Sender<crate::Telemetry>,
 ) -> Result<(), std::io::Error> {
-    #[cfg(feature = "debug")]
-    let mut buf: [u8; 100] = [0; 100];
+    let mut buf: [u8; 256] = [0; 256];
     #[cfg(feature = "debug")]
     match serial.read(&mut buf).await {
         Ok(0) => {
@@ -156,12 +155,17 @@ pub async fn read(
             return Err(e);
         }
     }
-    let mut buf = String::new();
-    let result = serial.read_to_string(&mut buf).await;
-    if result.is_ok() {
-        info!("ATMEGA: {}", buf);
-    } else if let Err(e) = result {
-        error!("Failed to read serial buffer: {}", e);
+    let result = serial.read(&mut buf).await;
+    match result {
+        Ok(0) => {
+            return Ok(());
+        }
+        Ok(n) => {
+            info!("ATMEGA: {}", String::from_utf8_lossy(&buf[..n]));
+        }
+        Err(e) => {
+            error!("Failed to read serial buffer: {}", e);
+        }
     }
     Ok(())
 }

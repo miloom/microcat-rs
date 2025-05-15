@@ -29,9 +29,9 @@ pub async fn read(
     initialized: &mut bool,
     tx: &mut Sender<crate::Telemetry>,
 ) -> Result<(), std::io::Error> {
-    #[cfg(not(feature = "debug"))]
+    #[cfg(feature = "debug")]
     let mut buf: [u8; 100] = [0; 100];
-    #[cfg(not(feature = "debug"))]
+    #[cfg(feature = "debug")]
     match serial.read(&mut buf).await {
         Ok(0) => {
             trace!("No data read");

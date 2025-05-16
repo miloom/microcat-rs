@@ -17,6 +17,7 @@ mod camera;
 mod consts;
 mod rgb;
 mod serial;
+mod time_sync;
 
 struct MicrocatNode {
     _node: Arc<rclrs::Node>,
@@ -329,6 +330,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 .expect("Failed to open serial port");
 
             info!("{:?}", serial);
+
+            time_sync::time_sync(&mut serial).await;
 
             loop {
                 tokio::select! {

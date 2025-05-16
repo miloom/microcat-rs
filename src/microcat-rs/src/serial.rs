@@ -1,14 +1,17 @@
 #![allow(unused_imports)]
+
 use crate::serial::message::message::Data;
 use crate::Telemetry;
 use crate::Telemetry::BatteryVoltage;
 use bytes::{Buf, BytesMut};
 use microcat_msgs::msg::{MotorStatus, ToneDetector};
 use prost::Message;
+use std::time::UNIX_EPOCH;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::sync::mpsc::Sender;
 use tokio_serial::SerialStream;
 use tracing::{debug, error, info, trace};
+use tracing_subscriber::fmt::time;
 
 #[rustfmt::skip]
 mod imu;
@@ -21,6 +24,8 @@ mod motor;
 mod pressure;
 #[rustfmt::skip]
 mod tone_detector;
+#[rustfmt::skip]
+mod sync;
 
 
 #[tracing::instrument(level = "trace", skip(serial, tx))]
@@ -141,6 +146,19 @@ pub async fn read(
                         None => {
                             return Ok(());
                         }
+                        Some(Data::InitSync(_)) => {
+                            return Ok(());
+                        }
+                        Some(Data::ResponseSync(msg)) => {
+                            let offset = (msg.delay_ms
+                                - (msg.t3_ms
+                                    - std::time::SystemTime::now()
+                                        .duration_since(UNIX_EPOCH)
+                                        .unwrap()
+                                        .as_millis() as i64))
+                                / 2;
+                            info!("Offset: {}", offset);
+                        }
                     }
                 } else {
                     debug!("Failed to decode serial")
@@ -174,6 +192,7 @@ pub struct MotorPos {
 #[derive(Debug)]
 pub enum Command {
     MotorTarget(MotorPos),
+    TimeSync,
 }
 
 #[tracing::instrument(level = "trace", skip(serial))]
@@ -196,6 +215,14 @@ pub async fn write(serial: &mut SerialStream, command: Command) {
                 data: Some(message::message::Data::MotorTarget(data)),
             }
         }
+        Command::TimeSync => message::Message {
+            data: Some(message::message::Data::InitSync(sync::Initialize {
+                t1_ms: std::time::SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .unwrap()
+                    .as_millis() as i64,
+            })),
+        },
     };
 
     let mut buf = BytesMut::new();

@@ -40,7 +40,7 @@ fn main() {
         let mut builder = git2::build::RepoBuilder::new();
         builder.fetch_options(fo);
 
-        builder.branch("main");
+        builder.branch("latency-test");
 
         builder
             .clone(repo_url, Path::new(cache_dir))

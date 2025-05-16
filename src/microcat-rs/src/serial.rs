@@ -22,36 +22,6 @@ mod pressure;
 #[rustfmt::skip]
 mod tone_detector;
 
-pub fn extract_complete_lines(buffer: &mut BytesMut) -> Vec<String> {
-    let mut lines = Vec::new();
-    let mut start = 0;
-
-    while let Some(pos) = buffer[start..].iter().position(|&b| b == b'\n') {
-        let end = start + pos;
-
-        // Extract line slice
-        let line_bytes = if end > 0 && buffer[end - 1] == b'\r' {
-            &buffer[start..end - 1] // Remove '\r'
-        } else {
-            &buffer[start..end]
-        };
-
-        // Convert to string if valid UTF-8
-        match std::str::from_utf8(line_bytes) {
-            Ok(line) => lines.push(line.to_string()),
-            Err(_) => {
-                // Optionally handle decoding errors here.
-                // For now, just skip invalid lines.
-            }
-        }
-
-        start = end + 1; // Skip over '\n'
-    }
-
-    // Remove the processed part from the buffer
-    buffer.advance(start);
-    lines
-}
 
 #[tracing::instrument(level = "trace", skip(serial, tx))]
 pub async fn read(
@@ -61,7 +31,6 @@ pub async fn read(
     tx: &mut Sender<crate::Telemetry>,
 ) -> Result<(), std::io::Error> {
     let mut buf: [u8; 256] = [0; 256];
-    #[cfg(feature = "debug")]
     match serial.read(&mut buf).await {
         Ok(0) => {
             trace!("No data read");
@@ -186,21 +155,6 @@ pub async fn read(
             return Err(e);
         }
     }
-    let result = serial.read(&mut buf).await;
-    match result {
-        Ok(0) => {
-            return Ok(());
-        }
-        Ok(n) => {
-            message_buffer.extend(buf[..n].iter());
-            for line in extract_complete_lines(message_buffer) {
-                info!("ATMEGA: {}", line);
-            }
-        }
-        Err(e) => {
-            error!("Failed to read serial buffer: {}", e);
-        }
-    }
     Ok(())
 }
 
@@ -252,14 +206,11 @@ pub async fn write(serial: &mut SerialStream, command: Command) {
         error!("Failed to encode protobuf message");
         return;
     }
-    info!("Protobuf encoded bytes: {:#04x?}", &buf);
-    info!("Protobuf length: {}", buf.len());
 
     let mut dest = [0u8; 128];
     let len = cobs::encode(buf.iter().as_slice(), &mut dest);
     dest[len] = 0;
     let full_len = len + 1;
-    info!("Sending ({} bytes): {:#04x?}", full_len, &dest[..full_len]);
 
     for byte in dest[..full_len].iter() {
         match serial.write_all(&[*byte]).await {

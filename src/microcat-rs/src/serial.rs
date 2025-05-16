@@ -265,7 +265,7 @@ pub async fn write(serial: &mut SerialStream, command: Command) {
         match serial.write_all(&[*byte]).await {
             Ok(_) => {
                 serial.flush().await.unwrap(); // Ensure data hits the wire
-                tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
+                tokio::time::sleep(tokio::time::Duration::from_micros(2500)).await;
             }
             Err(e) => {
                 error!("Failed to write to serial: {}", e);

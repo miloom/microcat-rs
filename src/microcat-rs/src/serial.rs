@@ -141,9 +141,6 @@ pub async fn read(
                         None => {
                             return Ok(());
                         }
-                        Some(Data::DebugMessage(msg)) => {
-                            info!("ATMEGA: {msg}");
-                        }
                     }
                 } else {
                     debug!("Failed to decode serial")

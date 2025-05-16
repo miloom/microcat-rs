@@ -261,13 +261,15 @@ pub async fn write(serial: &mut SerialStream, command: Command) {
     let full_len = len + 1;
     info!("Sending ({} bytes): {:#04x?}", full_len, &dest[..full_len]);
 
-    match serial.write_all(&dest[..full_len]).await {
-        Ok(_) => {
-            info!("Successfully wrote all {} bytes", full_len);
-            serial.flush().await.unwrap(); // Ensure data hits the wire
-        }
-        Err(e) => {
-            error!("Failed to write to serial: {}", e);
+    for byte in dest[..full_len].iter() {
+        match serial.write_all(&[*byte]).await {
+            Ok(_) => {
+                serial.flush().await.unwrap(); // Ensure data hits the wire
+                tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
+            }
+            Err(e) => {
+                error!("Failed to write to serial: {}", e);
+            }
         }
     }
 }

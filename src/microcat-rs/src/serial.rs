@@ -64,7 +64,7 @@ pub async fn read(
                 #[allow(unused_variables)]
                 let message = &dest[..len];
 
-                let decoded = message::Message::decode(message).inspect_err(|e| println!("{e}"));
+                let decoded = message::Message::decode(message).inspect_err(|e| error!("{e}"));
 
                 #[allow(unused_variables)]
                 if let Ok(msg) = decoded {

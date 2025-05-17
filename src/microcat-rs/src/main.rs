@@ -72,6 +72,10 @@ impl MicrocatNode {
                         frame_number: Arc::clone(&timing_counter_clone).load(Ordering::Relaxed),
                     });
                     Arc::clone(&timing_counter_clone).fetch_add(1, Ordering::Relaxed);
+                    debug!(
+                        "Took timestamp {}",
+                        timing_counter_clone.load(Ordering::Relaxed)
+                    );
 
                     let command = serial::Command::MotorTarget(MotorPos {
                         location: MotorLocation::FrontLeft,

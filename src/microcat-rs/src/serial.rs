@@ -104,6 +104,7 @@ pub async fn read(
                             return Ok(());
                         }
                         Some(Data::ResponseSync(msg)) => {
+                            debug!("Response sync: {:?}", msg);
                             let offset = (msg.delay_ms
                                 - (msg.t3_ms
                                     - std::time::SystemTime::now()
@@ -115,6 +116,7 @@ pub async fn read(
                             info!("Offset: {}", offset);
                         }
                         Some(Data::Time(time)) => {
+                            debug!("Time: {:?} Offset: {}", time, *time_offset_rx.borrow());
                             let _ = timing_tx.send(TimingFrame {
                                 timestamp: (time.time_ms - *time_offset_rx.borrow()) as u128,
                                 frame_number: time.count,

@@ -56,6 +56,7 @@ pub async fn read(
                 let message = message_buffer.split_to(end + 1);
                 let mut dest = [0u8; 256];
                 let len = cobs::decode(message.iter().as_slice(), &mut dest);
+                debug!("COBS decoding");
                 if len.is_err() {
                     return Ok(());
                 }
@@ -64,6 +65,7 @@ pub async fn read(
                 #[allow(unused_variables)]
                 let message = &dest[..len];
 
+                debug!("Protobuf message decoding");
                 let decoded = message::Message::decode(message).inspect_err(|e| error!("{e}"));
 
                 #[allow(unused_variables)]

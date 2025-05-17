@@ -41,7 +41,6 @@ struct MicrocatNode {
     camera_image_publisher: Arc<rclrs::Publisher<sensor_msgs::msg::Image>>,
     battery_data_publisher: Arc<rclrs::Publisher<microcat_msgs::msg::Battery>>,
     rx: Receiver<Telemetry>,
-    timing_counter: Arc<AtomicU32>,
 }
 
 impl MicrocatNode {
@@ -56,7 +55,6 @@ impl MicrocatNode {
         let node = executor.create_node("microcat")?;
 
         let timing_counter = Arc::new(AtomicU32::new(0));
-        let timing_counter_clone = Arc::clone(&timing_counter);
         let tx_clone = tx.clone();
         let _fl_motor_control_subscription = node
             .create_subscription::<microcat_msgs::msg::MotorControl, _>(
@@ -69,13 +67,10 @@ impl MicrocatNode {
                             .duration_since(UNIX_EPOCH)
                             .unwrap()
                             .as_millis(),
-                        frame_number: Arc::clone(&timing_counter_clone).load(Ordering::Relaxed),
+                        frame_number: timing_counter.load(Ordering::Relaxed),
                     });
-                    Arc::clone(&timing_counter_clone).fetch_add(1, Ordering::Relaxed);
-                    debug!(
-                        "Took timestamp {}",
-                        timing_counter_clone.load(Ordering::Relaxed)
-                    );
+                    timing_counter.fetch_add(1, Ordering::Relaxed);
+                    debug!("Took timestamp {}", timing_counter.load(Ordering::Relaxed));
 
                     let command = serial::Command::MotorTarget(MotorPos {
                         location: MotorLocation::FrontLeft,
@@ -183,7 +178,6 @@ impl MicrocatNode {
             pressure_data_publisher,
             camera_image_publisher,
             battery_data_publisher,
-            timing_counter,
         })
     }
 

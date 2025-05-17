@@ -205,6 +205,7 @@ pub async fn write(
     dest[len] = 0;
     let full_len = len + 1;
 
+    debug!("Sending serial timing {}" {count});
     let _ = timing_tx.send(TimingFrame {
         timestamp: std::time::SystemTime::now()
             .duration_since(UNIX_EPOCH)

@@ -163,7 +163,7 @@ pub enum Command {
 pub async fn write(
     serial: &mut SerialStream,
     command: Command,
-    timing_tx: &mut Sender<crate::TimingFrame>,
+    timing_tx: &Sender<crate::TimingFrame>,
     count: &mut u32,
 ) {
     debug!("Writing to serial");
@@ -213,6 +213,8 @@ pub async fn write(
             .as_millis(),
         frame_number: *count,
     });
+    debug!("Sent serial timing {}", count);
+    *count += 1;
     for byte in dest[..full_len].iter() {
         match serial.write_all(&[*byte]).await {
             Ok(_) => {

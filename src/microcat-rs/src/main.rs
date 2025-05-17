@@ -69,8 +69,8 @@ impl MicrocatNode {
                             .as_millis(),
                         frame_number: timing_counter.load(Ordering::Relaxed),
                     });
-                    timing_counter.fetch_add(1, Ordering::Relaxed);
                     debug!("Took timestamp {}", timing_counter.load(Ordering::Relaxed));
+                    timing_counter.fetch_add(1, Ordering::Relaxed);
 
                     let command = serial::Command::MotorTarget(MotorPos {
                         location: MotorLocation::FrontLeft,
@@ -373,9 +373,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                      val = command_rx.recv() => {
                         if let Some(command) = val {
                             debug!("Serial got command {command:?}");
-                            serial::write(&mut serial, command, &mut timing_tx.clone(), &mut count).await;
-                            count += 1;
-
+                            serial::write(&mut serial, command, &timing_tx, &mut count).await;
                         }
                     }
                     _ = shutdown_rx.changed() => {

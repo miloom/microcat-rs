@@ -1,8 +1,8 @@
 #![allow(unused_imports)]
 
 use crate::serial::message::message::Data;
-use crate::Telemetry;
 use crate::Telemetry::BatteryVoltage;
+use crate::{Telemetry, TimingFrame};
 use bytes::{Buf, BytesMut};
 use microcat_msgs::msg::{MotorStatus, ToneDetector};
 use prost::Message;
@@ -34,6 +34,9 @@ pub async fn read(
     message_buffer: &mut BytesMut,
     initialized: &mut bool,
     tx: &mut Sender<crate::Telemetry>,
+    timing_tx: &mut Sender<crate::TimingFrame>,
+    time_offset_tx: &mut tokio::sync::watch::Sender<i64>,
+    time_offset_rx: &mut tokio::sync::watch::Receiver<i64>,
 ) -> Result<(), std::io::Error> {
     let mut buf: [u8; 256] = [0; 256];
     match serial.read(&mut buf).await {
@@ -67,23 +70,6 @@ pub async fn read(
                 if let Ok(msg) = decoded {
                     trace!("Protobuf message decoded successfully {msg:?}");
                     match msg.data {
-                        Some(message::message::Data::Imu(msg)) => {
-                            if let Some(gyro) = msg.gyro {
-                                if let Some(accel) = msg.accel {
-                                    let _ = tx
-                                        .send(Telemetry::Imu(microcat_msgs::msg::Imu {
-                                            gyro_x: gyro.x as f32 / 131.0,
-                                            gyro_y: gyro.y as f32 / 131.0,
-                                            gyro_z: gyro.z as f32 / 131.0,
-                                            accel_x: accel.x as f32 / 100.0,
-                                            accel_y: accel.y as f32 / 100.0,
-                                            accel_z: accel.z as f32 / 100.0,
-                                        }))
-                                        .await;
-                                }
-                            }
-                        }
-                        Some(message::message::Data::MotorTarget(msg)) => {}
                         Some(message::message::Data::MotorPosition(msg)) => {
                             if let Ok(loc) = motor::Location::try_from(msg.location) {
                                 let _ = match loc {
@@ -111,39 +97,7 @@ pub async fn read(
                                 .await;
                             }
                         }
-                        Some(message::message::Data::ToneDetectorStatus(msg)) => {
-                            if let Ok(loc) = tone_detector::Location::try_from(msg.location) {
-                                let _ = match loc {
-                                    tone_detector::Location::Left => {
-                                        tx.send(Telemetry::LeftToneDetector(ToneDetector {
-                                            is_active: msg.is_high,
-                                        }))
-                                    }
-                                    tone_detector::Location::Right => {
-                                        tx.send(Telemetry::RightToneDetector(ToneDetector {
-                                            is_active: msg.is_high,
-                                        }))
-                                    }
-                                }
-                                .await;
-                            }
-                        }
-                        Some(message::message::Data::PressureData(msg)) => {
-                            let _ = tx
-                                .send(Telemetry::PressureData(microcat_msgs::msg::PressureData {
-                                    pressure: msg.pressure as f32 / 100.0,
-                                    temperature: msg.temperature as f32 / 100.0,
-                                }))
-                                .await;
-                        }
-                        Some(Data::BatterVoltage(voltage)) => {
-                            let _ = tx
-                                .send(BatteryVoltage(microcat_msgs::msg::Battery {
-                                    battery_voltage: voltage,
-                                }))
-                                .await;
-                        }
-                        None => {
+                        Some(Data::MotorTarget(_)) | None => {
                             return Ok(());
                         }
                         Some(Data::InitSync(_)) => {
@@ -157,7 +111,14 @@ pub async fn read(
                                         .unwrap()
                                         .as_millis() as i64))
                                 / 2;
+                            let _ = time_offset_tx.send(offset);
                             info!("Offset: {}", offset);
+                        }
+                        Some(Data::Time(time)) => {
+                            let _ = timing_tx.send(TimingFrame {
+                                timestamp: (time.time_ms - *time_offset_rx.borrow()) as u128,
+                                frame_number: time.count,
+                            });
                         }
                     }
                 } else {

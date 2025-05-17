@@ -3,8 +3,12 @@ use crate::serial::{MotorLocation, MotorPos};
 use bytes::BytesMut;
 use rclrs::CreateBasicExecutor;
 use rppal::gpio::Gpio;
+use std::collections::HashMap;
 use std::error::Error;
+use std::io::Write;
+use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::Arc;
+use std::time::UNIX_EPOCH;
 use tokio::sync::mpsc;
 use tokio::sync::mpsc::{Receiver, Sender};
 use tokio_serial::{DataBits, FlowControl, Parity, SerialPortBuilderExt, StopBits};
@@ -37,6 +41,7 @@ struct MicrocatNode {
     camera_image_publisher: Arc<rclrs::Publisher<sensor_msgs::msg::Image>>,
     battery_data_publisher: Arc<rclrs::Publisher<microcat_msgs::msg::Battery>>,
     rx: Receiver<Telemetry>,
+    timing_counter: Arc<AtomicU32>,
 }
 
 impl MicrocatNode {
@@ -45,16 +50,28 @@ impl MicrocatNode {
         mut rgb: Rgb,
         rx: Receiver<Telemetry>,
         tx: Sender<serial::Command>,
+        timing_tx: Sender<TimingFrame>,
     ) -> Result<Self, rclrs::RclrsError> {
         info!("Creating microcat node");
         let node = executor.create_node("microcat")?;
 
+        let timing_counter = Arc::new(AtomicU32::new(0));
+        let timing_counter_clone = Arc::clone(&timing_counter);
         let tx_clone = tx.clone();
         let _fl_motor_control_subscription = node
             .create_subscription::<microcat_msgs::msg::MotorControl, _>(
                 "/motor/front_left/control",
                 move |msg: microcat_msgs::msg::MotorControl| {
                     trace!("Received front_left motor_control msg {msg:?}");
+
+                    let _ = timing_tx.blocking_send(TimingFrame {
+                        timestamp: std::time::SystemTime::now()
+                            .duration_since(UNIX_EPOCH)
+                            .unwrap()
+                            .as_millis(),
+                        frame_number: Arc::clone(&timing_counter_clone).load(Ordering::Relaxed),
+                    });
+                    Arc::clone(&timing_counter_clone).fetch_add(1, Ordering::Relaxed);
 
                     let command = serial::Command::MotorTarget(MotorPos {
                         location: MotorLocation::FrontLeft,
@@ -162,6 +179,7 @@ impl MicrocatNode {
             pressure_data_publisher,
             camera_image_publisher,
             battery_data_publisher,
+            timing_counter,
         })
     }
 
@@ -227,6 +245,11 @@ enum Telemetry {
     BatteryVoltage(microcat_msgs::msg::Battery),
 }
 
+struct TimingFrame {
+    timestamp: u128,
+    frame_number: u32,
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     let home_dir = std::env::var("HOME").unwrap();
@@ -247,6 +270,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let (telemetry_tx, telemetry_rx) = mpsc::channel::<Telemetry>(10);
     let (command_tx, mut command_rx) = mpsc::channel::<serial::Command>(10);
     let (shutdown_tx, shutdown_rx) = tokio::sync::watch::channel(false);
+    let (timing_tx, mut timing_rx) = mpsc::channel::<TimingFrame>(10);
+    let (time_offset_tx, time_offset_rx) = tokio::sync::watch::channel(0i64);
     let shutdown_signal_task = {
         let shutdown_tx = shutdown_tx.clone();
         tokio::spawn(async move {
@@ -262,11 +287,13 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let mut executor = context.create_basic_executor();
     let ros_task = {
         let command_tx = command_tx.clone();
+        let timing_tx = timing_tx.clone();
 
         let mut shutdown_rx = shutdown_rx.clone();
         tokio::spawn(async move {
-            let mut microcat_node = MicrocatNode::new(&executor, rgb, telemetry_rx, command_tx)
-                .expect("Failed to create microcat node");
+            let mut microcat_node =
+                MicrocatNode::new(&executor, rgb, telemetry_rx, command_tx, timing_tx)
+                    .expect("Failed to create microcat node");
 
             let _ = std::thread::spawn(move || {
                 executor.spin(Default::default());
@@ -318,6 +345,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let mut serial_telemetry_tx = telemetry_tx.clone();
     let serial_task = {
         let mut shutdown_rx = shutdown_rx.clone();
+        let mut timing_tx = timing_tx.clone();
+        let mut time_offset_tx = time_offset_tx.clone();
+        let mut time_offset_rx = time_offset_rx.clone();
         tokio::spawn(async move {
             let mut serial_buf = BytesMut::default();
             let mut initialized = false;
@@ -339,7 +369,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                         &mut serial,
                         &mut serial_buf,
                         &mut initialized,
-                        &mut serial_telemetry_tx) => {
+                        &mut serial_telemetry_tx, &mut timing_tx, &mut time_offset_tx, &mut time_offset_rx) => {
                     }
                      val = command_rx.recv() => {
                         if let Some(command) = val {
@@ -357,13 +387,46 @@ async fn main() -> Result<(), Box<dyn Error>> {
         })
     };
 
+    let timing_task = {
+        let mut shutdown_rx = shutdown_rx.clone();
+
+        tokio::task::spawn(async move {
+            let mut measurements = HashMap::new();
+            loop {
+                tokio::select! {
+                    Some(timing) = timing_rx.recv() => {
+                        measurements.entry(timing.frame_number).or_insert(Vec::with_capacity(2)).push(timing.timestamp);
+                    }
+                    _ = shutdown_rx.changed() => {
+                        info!("Calculating timing data...");
+                        let mut file = std::fs::OpenOptions::new().write(true).append(true).create(true).open(format!("{}/timing_data.csv", home_dir)).unwrap();
+                        for (nr, measurements) in measurements.iter() {
+                            info!("Nr {nr} measurements: {measurements:?}");
+                            write!(file, "{nr},", nr = nr,).unwrap();
+
+                            for measurement in measurements {
+                                write!(file, "{measurement},", measurement = measurement).unwrap();
+                            }
+                            writeln!(file, "").unwrap();
+                        }
+
+
+                        println!("Shutting down timing task...");
+                        info!("Shutting down timing task...");
+                        break;
+                    }
+                }
+            }
+        })
+    };
+
     let camera_handle = {
         let camera_telemetry_tx = telemetry_tx.clone();
         let shutdown_rx = shutdown_rx.clone();
         camera::run_camera(camera_telemetry_tx, shutdown_rx)
     };
 
-    let (_, _, _) = tokio::join!(serial_task, ros_task, shutdown_signal_task);
+    let (_, _, _, _) = tokio::join!(serial_task, ros_task, shutdown_signal_task, timing_task);
 
     tokio::task::spawn_blocking(move || {
         camera_handle.join().expect("Failed to join camera task");

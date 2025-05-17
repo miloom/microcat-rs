@@ -360,7 +360,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
             info!("{:?}", serial);
 
             time_sync::time_sync(&mut serial).await;
-            let mut count = 0;
+            let mut count = 1;
 
             loop {
                 tokio::select! {
@@ -392,11 +392,12 @@ async fn main() -> Result<(), Box<dyn Error>> {
         let mut shutdown_rx = shutdown_rx.clone();
 
         tokio::task::spawn(async move {
-            let mut measurements = HashMap::new();
+            let mut measurements: HashMap<u32, Vec<u128>> = HashMap::new();
             loop {
                 tokio::select! {
                     Some(timing) = timing_rx.recv() => {
-                        measurements.entry(timing.frame_number).or_insert(Vec::with_capacity(2)).push(timing.timestamp);
+                        debug!("Got timing for {}", timing.frame_number);
+                        measurements.entry(timing.frame_number).or_insert_with(Vec::new).push(timing.timestamp);
                     }
                     _ = shutdown_rx.changed() => {
                         info!("Calculating timing data...");

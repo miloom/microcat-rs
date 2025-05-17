@@ -206,13 +206,15 @@ pub async fn write(
     let full_len = len + 1;
 
     debug!("Sending serial timing {}", count);
-    let _ = timing_tx.send(TimingFrame {
-        timestamp: std::time::SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap()
-            .as_millis(),
-        frame_number: *count,
-    });
+    let _ = timing_tx
+        .send(TimingFrame {
+            timestamp: std::time::SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_millis(),
+            frame_number: *count,
+        })
+        .await;
     debug!("Sent serial timing {}", count);
     *count += 1;
     for byte in dest[..full_len].iter() {

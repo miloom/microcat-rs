@@ -368,7 +368,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
                         &mut serial,
                         &mut serial_buf,
                         &mut initialized,
-                        &mut serial_telemetry_tx, &mut timing_tx, &mut time_offset_tx, &mut time_offset_rx) => {
+                        &mut serial_telemetry_tx,
+                        &mut timing_tx,
+                        &mut time_offset_tx,
+                        &mut time_offset_rx) => {
                     }
                      val = command_rx.recv() => {
                         if let Some(command) = val {

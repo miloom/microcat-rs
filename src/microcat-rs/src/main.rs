@@ -70,7 +70,11 @@ impl MicrocatNode {
                         timestamp: time,
                         frame_number: timing_counter.load(Ordering::Relaxed),
                     });
-                    debug!("Took timestamp {} {}", timing_counter.load(Ordering::Relaxed), time);
+                    debug!(
+                        "Took timestamp {} {}",
+                        timing_counter.load(Ordering::Relaxed),
+                        time
+                    );
                     timing_counter.fetch_add(1, Ordering::Relaxed);
 
                     let command = serial::Command::MotorTarget(MotorPos {

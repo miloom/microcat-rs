@@ -62,14 +62,15 @@ impl MicrocatNode {
                 move |msg: microcat_msgs::msg::MotorControl| {
                     trace!("Received front_left motor_control msg {msg:?}");
 
+                    let time = std::time::SystemTime::now()
+                        .duration_since(UNIX_EPOCH)
+                        .unwrap()
+                        .as_micros();
                     let _ = timing_tx.blocking_send(TimingFrame {
-                        timestamp: std::time::SystemTime::now()
-                            .duration_since(UNIX_EPOCH)
-                            .unwrap()
-                            .as_millis(),
+                        timestamp: time,
                         frame_number: timing_counter.load(Ordering::Relaxed),
                     });
-                    debug!("Took timestamp {}", timing_counter.load(Ordering::Relaxed));
+                    debug!("Took timestamp {} {}", timing_counter.load(Ordering::Relaxed), time);
                     timing_counter.fetch_add(1, Ordering::Relaxed);
 
                     let command = serial::Command::MotorTarget(MotorPos {
@@ -360,7 +361,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
             info!("{:?}", serial);
 
             time_sync::time_sync(&mut serial).await;
-            let mut count = 1;
+            let mut count = 0;
 
             loop {
                 tokio::select! {

@@ -366,6 +366,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
             info!("{:?}", serial);
 
             time_sync::time_sync(&mut serial).await;
+            let mut count = 0;
 
             loop {
                 tokio::select! {
@@ -378,7 +379,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
                      val = command_rx.recv() => {
                         if let Some(command) = val {
                             debug!("Serial got command {command:?}");
-                            serial::write(&mut serial, command).await;
+                            serial::write(&mut serial, command, &mut timing_tx.clone(), &mut count).await;
+                            count += 1;
+
                         }
                     }
                     _ = shutdown_rx.changed() => {

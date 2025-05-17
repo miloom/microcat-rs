@@ -5,5 +5,5 @@ use tracing::info;
 
 pub async fn time_sync(serial: &mut SerialStream) {
     info!("Time sync");
-    write(serial, TimeSync).await;
+    // write(serial, TimeSync).await;
 }

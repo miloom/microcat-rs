@@ -122,10 +122,6 @@ pub async fn read(
                         }
                         Some(Data::Time(time)) => {
                             debug!("Time: {:?} Offset: {}", time, *time_offset_rx.borrow());
-                            let _ = timing_tx.send(TimingFrame {
-                                timestamp: (time.time_ms - *time_offset_rx.borrow()) as u128,
-                                frame_number: time.count,
-                            });
                         }
                     }
                 } else {
@@ -164,7 +160,12 @@ pub enum Command {
 }
 
 #[tracing::instrument(level = "trace", skip(serial))]
-pub async fn write(serial: &mut SerialStream, command: Command) {
+pub async fn write(
+    serial: &mut SerialStream,
+    command: Command,
+    timing_tx: &mut Sender<crate::TimingFrame>,
+    count: &mut u32,
+) {
     debug!("Writing to serial");
     let message = match command {
         Command::MotorTarget(pos) => {
@@ -204,6 +205,13 @@ pub async fn write(serial: &mut SerialStream, command: Command) {
     dest[len] = 0;
     let full_len = len + 1;
 
+    let _ = timing_tx.send(TimingFrame {
+        timestamp: std::time::SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_millis(),
+        frame_number: *count,
+    });
     for byte in dest[..full_len].iter() {
         match serial.write_all(&[*byte]).await {
             Ok(_) => {

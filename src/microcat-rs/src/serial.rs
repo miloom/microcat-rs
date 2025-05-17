@@ -72,6 +72,7 @@ pub async fn read(
                     match msg.data {
                         Some(message::message::Data::MotorPosition(msg)) => {
                             if let Ok(loc) = motor::Location::try_from(msg.location) {
+                                debug!("Motor position");
                                 let _ = match loc {
                                     motor::Location::FrontLeft => {
                                         tx.send(Telemetry::FLMotorPosition(MotorStatus {
@@ -98,9 +99,11 @@ pub async fn read(
                             }
                         }
                         Some(Data::MotorTarget(_)) | None => {
+                            debug!("Motor target");
                             return Ok(());
                         }
                         Some(Data::InitSync(_)) => {
+                            debug!("Init sync");
                             return Ok(());
                         }
                         Some(Data::ResponseSync(msg)) => {

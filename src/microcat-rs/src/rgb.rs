@@ -22,7 +22,7 @@ pub struct Rgb {
 impl Rgb {
     pub fn init_leds() -> Result<Rgb, Box<dyn Error>> {
         debug!("Initializing leds");
-        let red_pwm = pwm::Pwm::with_frequency(
+        let first_pwm = pwm::Pwm::with_frequency(
             pwm::Channel::Pwm0,
             LED_PWM_FREQUENCY,
             0.0,
@@ -30,7 +30,7 @@ impl Rgb {
             false,
         )?;
         debug!("RED done");
-        let blue_pwm = pwm::Pwm::with_frequency(
+        let second_pwm = pwm::Pwm::with_frequency(
             pwm::Channel::Pwm1,
             LED_PWM_FREQUENCY,
             0.0,
@@ -38,13 +38,20 @@ impl Rgb {
             false,
         )?;
         debug!("BLUE done");
-        let mut green_pwm = gpio::Gpio::new()?.get(G_LED)?.into_output();
-        green_pwm.set_pwm_frequency(LED_PWM_FREQUENCY, 0.0)?;
+        let mut third_pwm = gpio::Gpio::new()?.get(G_LED)?.into_output();
+        third_pwm.set_pwm_frequency(LED_PWM_FREQUENCY, 0.0)?;
         debug!("GREEN done");
+        #[cfg(feature = "v21_hardware")]
+        return Ok(Rgb {
+            red: Led::Pwm(first_pwm),
+            green: Led::Gpio(third_pwm),
+            blue: Led::Pwm(second_pwm),
+        });
+        #[cfg(feature = "v26_hardware")]
         Ok(Rgb {
-            red: Led::Pwm(red_pwm),
-            green: Led::Gpio(green_pwm),
-            blue: Led::Pwm(blue_pwm),
+            red: Led::Gpio(third_pwm),
+            green: Led::Pwm(second_pwm),
+            blue: Led::Pwm(first_pwm),
         })
     }
 

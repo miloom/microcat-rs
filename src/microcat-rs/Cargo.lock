@@ -1935,6 +1935,10 @@ name = "action_msgs"
 version = "1.2.1"
 
 [[patch.unused]]
+name = "microcat-rs"
+version = "0.1.0"
+
+[[patch.unused]]
 name = "rcl_interfaces"
 version = "1.2.1"
 

@@ -19,22 +19,22 @@ mod rgb;
 mod serial;
 
 struct MicrocatNode {
-    _node: Arc<rclrs::Node>,
-    _fl_motor_control_subscription: Arc<rclrs::Subscription<microcat_msgs::msg::MotorControl>>,
-    _fr_motor_control_subscription: Arc<rclrs::Subscription<microcat_msgs::msg::MotorControl>>,
-    _rl_motor_control_subscription: Arc<rclrs::Subscription<microcat_msgs::msg::MotorControl>>,
-    _rr_motor_control_subscription: Arc<rclrs::Subscription<microcat_msgs::msg::MotorControl>>,
-    _rgb_subscription: Arc<rclrs::Subscription<microcat_msgs::msg::Led>>,
-    fl_motor_status_publisher: Arc<rclrs::Publisher<microcat_msgs::msg::MotorStatus>>,
-    fr_motor_status_publisher: Arc<rclrs::Publisher<microcat_msgs::msg::MotorStatus>>,
-    rl_motor_status_publisher: Arc<rclrs::Publisher<microcat_msgs::msg::MotorStatus>>,
-    rr_motor_status_publisher: Arc<rclrs::Publisher<microcat_msgs::msg::MotorStatus>>,
-    imu_publisher: Arc<rclrs::Publisher<microcat_msgs::msg::Imu>>,
-    left_tone_detector_publisher: Arc<rclrs::Publisher<microcat_msgs::msg::ToneDetector>>,
-    right_tone_detector_publisher: Arc<rclrs::Publisher<microcat_msgs::msg::ToneDetector>>,
-    pressure_data_publisher: Arc<rclrs::Publisher<microcat_msgs::msg::PressureData>>,
-    camera_image_publisher: Arc<rclrs::Publisher<sensor_msgs::msg::Image>>,
-    battery_data_publisher: Arc<rclrs::Publisher<microcat_msgs::msg::Battery>>,
+    _node: rclrs::Node,
+    _fl_motor_control_subscription: rclrs::Subscription<microcat_msgs::msg::MotorControl>,
+    _fr_motor_control_subscription: rclrs::Subscription<microcat_msgs::msg::MotorControl>,
+    _rl_motor_control_subscription: rclrs::Subscription<microcat_msgs::msg::MotorControl>,
+    _rr_motor_control_subscription: rclrs::Subscription<microcat_msgs::msg::MotorControl>,
+    _rgb_subscription: rclrs::Subscription<microcat_msgs::msg::Led>,
+    fl_motor_status_publisher: rclrs::Publisher<microcat_msgs::msg::MotorStatus>,
+    fr_motor_status_publisher: rclrs::Publisher<microcat_msgs::msg::MotorStatus>,
+    rl_motor_status_publisher: rclrs::Publisher<microcat_msgs::msg::MotorStatus>,
+    rr_motor_status_publisher: rclrs::Publisher<microcat_msgs::msg::MotorStatus>,
+    imu_publisher: rclrs::Publisher<microcat_msgs::msg::Imu>,
+    left_tone_detector_publisher: rclrs::Publisher<microcat_msgs::msg::ToneDetector>,
+    right_tone_detector_publisher: rclrs::Publisher<microcat_msgs::msg::ToneDetector>,
+    pressure_data_publisher: rclrs::Publisher<microcat_msgs::msg::PressureData>,
+    camera_image_publisher: rclrs::Publisher<sensor_msgs::msg::Image>,
+    battery_data_publisher: rclrs::Publisher<microcat_msgs::msg::Battery>,
     rx: Receiver<Telemetry>,
 }
 
@@ -320,7 +320,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         tokio::spawn(async move {
             let mut serial_buf = BytesMut::default();
             let mut initialized = false;
-            let mut serial = tokio_serial::new("/dev/ttyAMA0", 115_200)
+            let mut serial = tokio_serial::new("/dev/ttyAMA10", 115_200)
                 .data_bits(DataBits::Eight)
                 .flow_control(FlowControl::None)
                 .parity(Parity::None)

@@ -173,7 +173,20 @@ interfaces with the Raspberry PI hardware, which means other computers will fail
       sudo udevadm control --reload-rules
       sudo udevadm trigger
       ```
-6. Reboot
+6. Configure GPIO access
+    To make sure that the gpiomem is accessible we need to add extra udev rules
+    * Create file `/etc/udev/rules.d/gpio.rules` with the contents:
+    ```
+    KERNEL=="gpiochip*", GROUP="gpio"
+    KERNEL=="gpiomem*", GROUP="gpio"
+    ```
+    * Reload the uder rules:
+    ```bash
+    sudo udevadm control --reload-rules
+    sudo udevadm trigger
+    ```
+
+7. Reboot
 
 
 1. Copy the built files over to the raspberry

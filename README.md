@@ -47,7 +47,12 @@ pip install git+https://github.com/colcon/colcon-cargo.git
 pip install git+https://github.com/colcon/colcon-ros-cargo.git
 ```
 
-5. On the first build set up ROS2 repositories
+5. Update git submodules
+```
+git submodule init && git submodule update
+```
+
+6. On the first build set up ROS2 repositories
 
 ```bash
 vcs import src < src/ros2_rust/ros2_rust_humble.repos
@@ -59,7 +64,7 @@ Testing with pipx showed that it fails to install the packages correctly which c
 To see if the packages have been installed correctly you can run ```colcon list``` and verify that the packages
 rosidl_runtime_rs and rosidl_generator_rs do not end with *(ros.ament_cargo)*
 
-6. Install extra dependencies to build
+7. Install extra dependencies to build
    These dependencies are used by some packages in Cargo.toml
 
 ```bash
